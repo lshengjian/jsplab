@@ -4,10 +4,10 @@ import numpy as np
 from typing import List
 from .text_helper import text2nums, clean_comment
 from .instance import Instance
-from .. import FJSP_Data
+from .. import JSP_Data,Operate_type
 
 
-class InstanceFJSP(Instance):
+class InstanceJSP(Instance):
     def parse(self, lines: List[str]):
         """
             Convert text form of the data into matrix form
@@ -15,29 +15,20 @@ class InstanceFJSP(Instance):
         """
 
         lines = clean_comment(lines)
-        n_j, n_m = lines[0][0], lines[0][1]  # 作业数量，机器数量,机器平均任务数
-        num_tasks_job = np.zeros(n_j, dtype='int32')  # 作业任务数量
-        op_pt = []  # 加工处理时间
+        n_j, n_m = lines[0][0], lines[0][1]  # 作业数量，机器数量
+        jobs = [] 
 
         for i in range(n_j):
             data = np.array(lines[i + 1])
-            num_tasks_job[i] = data[0]
+            assert len(data)%2==0
+            job=[]
 
-            idx = 1
-            for j in range(data[0]):
-                op_pt_row = np.zeros(n_m, dtype='int32')
-                num_machine = data[idx]  # 该任务可在几台机器上进行
-                next_idx = idx + 2 * num_machine + 1
-                for k in range(num_machine):
-                    mch_idx = data[idx + 2 * k + 1]
-                    pt = data[idx + 2 * k + 2]  # 加工处理时间
-                    op_pt_row[mch_idx - 1] = pt  # 实例中的机器编号从1开始编号的
-
-                idx = next_idx
-                op_pt.append(op_pt_row)
-
-        op_pt = np.array(op_pt)
-        self.data = FJSP_Data(self.name, num_tasks_job, op_pt)
+            for j in range(0,len(data),2):
+                m,t=data[j],data[j+1]
+                job.append(Operate_type(m,t))
+            jobs.append(job)    
+        self.data=JSP_Data(self.name,jobs)
+                
 
     def to_text(self, separator='\t'):
         """

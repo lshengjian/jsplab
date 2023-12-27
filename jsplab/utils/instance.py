@@ -1,19 +1,15 @@
 
 from typing import List
 
-from .. import INSTANCE_DATA
+from .. import FJSP_Data
+
 
 class Instance:
     def __init__(self, name):
-        self.data:INSTANCE_DATA=INSTANCE_DATA(name)
-        
-        
-        
+        self.name = name
+        # self.data: FJSP_DATA = FJSP_DATA(name)
 
-    def parse(self,lines:List[str]):
+    def parse(self, lines: List[str]):
         pass
 
-
-    # def parse_from_file(self,fname:str):
-    #     pass
 
