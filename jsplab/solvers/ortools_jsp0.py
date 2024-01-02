@@ -12,9 +12,6 @@ def slove(ins_data:JSP_Data):
     all_machines = range(machines_count)
     # Computes horizon dynamically as the sum of all durations.
     horizon = sum(task.duration for job in jobs_data for task in job)
-    horizon *=2
-
-
 
     # Create the model.
     model = cp_model.CpModel()
@@ -25,20 +22,9 @@ def slove(ins_data:JSP_Data):
     assigned_task_type = collections.namedtuple(
         "assigned_task_type", "start job index duration"
     )
-    agv_pos=[model.NewConstant(1)]
-    for i in range(1,horizon):
-        agv_pos.append(model.NewIntVar(0, 9, f"agv_{i}"))
-        p1 = agv_pos[i-1]
-        p2 = agv_pos[i]
-        temp=model.NewIntVar(0, 1, "") 
-        model.AddAbsEquality(temp,p1-p2)
-        model.Add(temp<=1)
-    
-    
+
     # Creates job intervals and add to the corresponding machine lists.
-    all_tasks ={}
-
-
+    all_tasks = {}
     machine_to_intervals = collections.defaultdict(list)
 
     for job_id, job in enumerate(jobs_data):
@@ -62,19 +48,8 @@ def slove(ins_data:JSP_Data):
     # Precedences inside a job.
     for job_id, job in enumerate(jobs_data):
         for task_id in range(len(job) - 1):
-            machine1,_ = job[task_id]
-            machine2,_ = job[task_id+1]
-            p1 = model.NewIntVar(0, 9, "")
-            model.AddElement(all_tasks[job_id, task_id].end,agv_pos,p1)
-            model.Add(p1==machine1+1)
-            p2=model.NewIntVar(0, 9, "")
-            model.AddElement(all_tasks[job_id, task_id + 1].start,agv_pos,p2)
-            model.Add(p2==machine2+1)
-            
-            dis=model.NewIntVar(0, 9, "") 
-            model.AddAbsEquality(dis,p1-p2)
             model.Add(
-                all_tasks[job_id, task_id + 1].start >= all_tasks[job_id, task_id].end+dis
+                all_tasks[job_id, task_id + 1].start >= all_tasks[job_id, task_id].end
             )
 
     # Makespan objective.
@@ -134,11 +109,6 @@ def slove(ins_data:JSP_Data):
     else:
         print("No solution found.")
 
-    for i in range(int(solver.ObjectiveValue())):
-        d=solver.Value(agv_pos[i])
-        print(f'{d} ',end='')
-        if i%10==9:
-            print('')
     # Statistics.
     # print("\nStatistics")
     # print(f"  - conflicts: {solver.NumConflicts()}")
