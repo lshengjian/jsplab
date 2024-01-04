@@ -1,7 +1,12 @@
 """Minimal jobshop example."""
 import collections
 from ortools.sat.python import cp_model
+
+import matplotlib
+import numpy as np
+import pandas as pd
 from jsplab import JSP_Data
+from jsplab.utils.gantt import Visualizer
 
 def slove(ins_data:JSP_Data):
     """Minimal jobshop problem."""
@@ -25,7 +30,7 @@ def slove(ins_data:JSP_Data):
     assigned_task_type = collections.namedtuple(
         "assigned_task_type", "start job index duration"
     )
-    agv_pos=[model.NewConstant(1)]
+    agv_pos=[model.NewConstant(5)]
     for i in range(1,horizon):
         agv_pos.append(model.NewIntVar(0, 9, f"agv_{i}"))
         p1 = agv_pos[i-1]
@@ -105,45 +110,58 @@ def slove(ins_data:JSP_Data):
                 )
 
         # Create per machine output lines.
-        output = ""
-        for machine in all_machines:
-            # Sort by starting time.
-            assigned_jobs[machine].sort()
-            sol_line_tasks = f"M-{machine+1}: "
-            sol_line = " "*4
+        # output = ""
+        # for machine in all_machines:
+        #     # Sort by starting time.
+        #     assigned_jobs[machine].sort()
+        #     sol_line_tasks = f"M-{machine+1}: "
+        #     sol_line = " "*4
 
-            for assigned_task in assigned_jobs[machine]:
-                name = f"J{assigned_task.job+1}_{assigned_task.index+1}"
-                # Add spaces to output to align columns.
-                sol_line_tasks += f"{name:15}"
+        #     for assigned_task in assigned_jobs[machine]:
+        #         name = f"J{assigned_task.job+1}_{assigned_task.index+1}"
+        #         # Add spaces to output to align columns.
+        #         sol_line_tasks += f"{name:15}"
 
-                start = assigned_task.start
-                duration = assigned_task.duration
-                sol_tmp = f"[{start},{start + duration}]"
-                # Add spaces to output to align columns.
-                sol_line += f"{sol_tmp:15}"
+        #         start = assigned_task.start
+        #         duration = assigned_task.duration
+        #         sol_tmp = f"[{start},{start + duration}]"
+        #         # Add spaces to output to align columns.
+        #         sol_line += f"{sol_tmp:15}"
 
-            sol_line += "\n"
-            sol_line_tasks += "\n"
-            output += sol_line_tasks
-            output += sol_line
+        #     sol_line += "\n"
+        #     sol_line_tasks += "\n"
+        #     output += sol_line_tasks
+        #     output += sol_line
 
         # Finally print the solution found.
         print(f"Optimal Schedule Length: {solver.ObjectiveValue()}")
-        print(output)
+        #print(output)
     else:
         print("No solution found.")
 
+
+    c_map = matplotlib.colormaps["rainbow"]
+    arr = np.linspace(0, 1, machines_count, dtype=float)
+    machine_colors = {m_id: c_map(val)  for m_id, val in enumerate(arr)}
+    colors = {f"M_{m_id+1}": (r, g, b) for m_id, (r, g, b, a) in machine_colors.items()}
+    
+    df=pd.DataFrame([
+            {
+                'Task': f'J{task.job+1}',
+                'Start': task.start,
+                'Finish': task.start+task.duration,
+                'Resource': f'M_{machine+1}'
+            }
+            for machine, data in assigned_jobs.items() for task in data
+        ])
+
+    Visualizer.gantt_chart_console(df,colors)
     for i in range(int(solver.ObjectiveValue())):
         d=solver.Value(agv_pos[i])
-        print(f'{d} ',end='')
-        if i%10==9:
+        print(f'{d}',end='')
+        print('|' if i%10==9 else ' ',end='')
+        if i%60==59:
             print('')
-    # Statistics.
-    # print("\nStatistics")
-    # print(f"  - conflicts: {solver.NumConflicts()}")
-    # print(f"  - branches : {solver.NumBranches()}")
-    # print(f"  - wall time: {solver.WallTime()}s")
 
 
 if __name__ == "__main__":
