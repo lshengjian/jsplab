@@ -5,7 +5,6 @@ from pathlib import Path
 def main():
     dir = Path(__file__).parent
     ds = load_data_list(dir/'data/jsp_demo/study')
-    #assert len(ds) == 1
     d: JSP_Data = ds[0]
     
     slove(d)

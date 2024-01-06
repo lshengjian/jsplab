@@ -1,14 +1,36 @@
 """Minimal jobshop example."""
 import collections
 from ortools.sat.python import cp_model
-
+import time
 import matplotlib
 import numpy as np
 import pandas as pd
 from jsplab import JSP_Data
 from jsplab.utils.gantt import Visualizer
 
-def slove(ins_data:JSP_Data):
+def demo(solver,agv_pos):
+    n=int(solver.ObjectiveValue())
+    info=[str(i) for i in range(1,10)]
+    info=''.join(info)
+    print(f'\r{info}')
+    s1=''
+    s2=''
+
+    for i in range(n):
+        info=list(' '*9)
+        d=solver.Value(agv_pos[i])
+        info[d]='\033[0;40;32m'+'o\033[0m'
+        info=''.join(info)
+        print(f'\r{info}',end='')
+        time.sleep(0.2) 
+        s1+=f'{i%10}'
+        s2+=str(solver.Value(agv_pos[i]))
+    print()
+    print(s1)
+    print(s2)
+ 
+
+def slove(ins_data:JSP_Data,updown=3):
     """Minimal jobshop problem."""
     # Data.
     jobs_data =ins_data.jobs_data
@@ -69,14 +91,28 @@ def slove(ins_data:JSP_Data):
         for task_id in range(len(job) - 1):
             machine1,_ = job[task_id]
             machine2,_ = job[task_id+1]
-            p1 = model.NewIntVar(0, 9, "")
+            p1 = model.NewIntVar(1, 9, "")
             model.AddElement(all_tasks[job_id, task_id].end,agv_pos,p1)
             model.Add(p1==machine1+1)
-            p2=model.NewIntVar(0, 9, "")
+            for k in range(1,updown+1):
+                p = model.NewIntVar(1, 9, "")
+                tp = model.NewIntVar(0, horizon, "")
+                model.Add(tp==all_tasks[job_id, task_id].end+k)
+                model.AddElement(tp,agv_pos,p)
+                model.Add(p==machine1+1)
+
+            p2=model.NewIntVar(1, 9, "")
             model.AddElement(all_tasks[job_id, task_id + 1].start,agv_pos,p2)
             model.Add(p2==machine2+1)
+            if task_id>0:
+                for k in range(1,updown+1):
+                    p = model.NewIntVar(1, 9, "")
+                    tp = model.NewIntVar(0, horizon, "")
+                    model.Add(tp==all_tasks[job_id, task_id].start-k)
+                    model.AddElement(tp,agv_pos,p)
+                    model.Add(p==machine2+1)
             
-            dis=model.NewIntVar(0, 9, "") 
+            dis=model.NewIntVar(1, 9, "") 
             model.AddAbsEquality(dis,p1-p2)
             model.Add(
                 all_tasks[job_id, task_id + 1].start >= all_tasks[job_id, task_id].end+dis
@@ -110,59 +146,53 @@ def slove(ins_data:JSP_Data):
                 )
 
         # Create per machine output lines.
-        # output = ""
-        # for machine in all_machines:
-        #     # Sort by starting time.
-        #     assigned_jobs[machine].sort()
-        #     sol_line_tasks = f"M-{machine+1}: "
-        #     sol_line = " "*4
+        output = ""
+        for machine in all_machines:
+            # Sort by starting time.
+            assigned_jobs[machine].sort()
+            sol_line_tasks = f"M-{machine+1}: "
+            sol_line = " "*4
 
-        #     for assigned_task in assigned_jobs[machine]:
-        #         name = f"J{assigned_task.job+1}_{assigned_task.index+1}"
-        #         # Add spaces to output to align columns.
-        #         sol_line_tasks += f"{name:15}"
+            for assigned_task in assigned_jobs[machine]:
+                name = f"J{assigned_task.job+1}_{assigned_task.index+1}"
+                # Add spaces to output to align columns.
+                sol_line_tasks += f"{name:15}"
 
-        #         start = assigned_task.start
-        #         duration = assigned_task.duration
-        #         sol_tmp = f"[{start},{start + duration}]"
-        #         # Add spaces to output to align columns.
-        #         sol_line += f"{sol_tmp:15}"
+                start = assigned_task.start
+                duration = assigned_task.duration
+                sol_tmp = f"[{start},{start + duration}]"
+                # Add spaces to output to align columns.
+                sol_line += f"{sol_tmp:15}"
 
-        #     sol_line += "\n"
-        #     sol_line_tasks += "\n"
-        #     output += sol_line_tasks
-        #     output += sol_line
+            sol_line += "\n"
+            sol_line_tasks += "\n"
+            output += sol_line_tasks
+            output += sol_line
 
         # Finally print the solution found.
         print(f"Optimal Schedule Length: {solver.ObjectiveValue()}")
-        #print(output)
+        print(output)
+        c_map = matplotlib.colormaps["rainbow"]
+        arr = np.linspace(0, 1, machines_count, dtype=float)
+        machine_colors = {m_id: c_map(val)  for m_id, val in enumerate(arr)}
+        colors = {f"M_{m_id+1}": (r, g, b) for m_id, (r, g, b, a) in machine_colors.items()}
+        
+        df=pd.DataFrame([
+                {
+                    'Task': f'J{task.job+1}',
+                    'Start': task.start,
+                    'Finish': task.start+task.duration,
+                    'Resource': f'M_{machine+1}'
+                }
+                for machine, data in assigned_jobs.items() for task in data
+            ])
+
+        Visualizer.gantt_chart_console(df,colors)
+        demo(solver,agv_pos)
     else:
         print("No solution found.")
 
 
-    c_map = matplotlib.colormaps["rainbow"]
-    arr = np.linspace(0, 1, machines_count, dtype=float)
-    machine_colors = {m_id: c_map(val)  for m_id, val in enumerate(arr)}
-    colors = {f"M_{m_id+1}": (r, g, b) for m_id, (r, g, b, a) in machine_colors.items()}
-    
-    df=pd.DataFrame([
-            {
-                'Task': f'J{task.job+1}',
-                'Start': task.start,
-                'Finish': task.start+task.duration,
-                'Resource': f'M_{machine+1}'
-            }
-            for machine, data in assigned_jobs.items() for task in data
-        ])
-
-    Visualizer.gantt_chart_console(df,colors)
-    for i in range(int(solver.ObjectiveValue())):
-        d=solver.Value(agv_pos[i])
-        print(f'{d}',end='')
-        print('|' if i%10==9 else ' ',end='')
-        if i%60==59:
-            print('')
 
 
-if __name__ == "__main__":
-    main()
+
