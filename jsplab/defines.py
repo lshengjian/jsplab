@@ -15,6 +15,7 @@ class Instance_Data:
     name: str = ''
 
 
+
 @dataclass
 class JSP_Data(Instance_Data):
     jobs_data: List[List[Operate_type]] = None
