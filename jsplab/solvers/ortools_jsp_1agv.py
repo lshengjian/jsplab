@@ -110,6 +110,7 @@ def slove(ins_data:JSP_Data):
         model.AddNoOverlap(machine_to_intervals[machine])
 
     # Precedences inside a job.
+    agv_pos=agv_history[0]
     for job_id, job in enumerate(jobs_data):
         for task_id in range(len(job) - 1):
             task1 = job[task_id]
@@ -121,7 +122,7 @@ def slove(ins_data:JSP_Data):
             p1 = model.NewIntVar(1, 9, "")
             model.AddElement(plan1.end,agv_pos,p1)
             model.Add(p1==machine_offsets[task1.machine])
-            for k in range(up_time):
+            for k in range(1,up_time+1):
                 p = model.NewIntVar(1, 9, "")
                 tp = model.NewIntVar(0, horizon, "")
                 model.Add(tp==plan1.end+k)
@@ -132,7 +133,7 @@ def slove(ins_data:JSP_Data):
             model.AddElement(plan2.start,agv_pos,p2)
             model.Add(p2==machine_offsets[task2.machine])
             
-            for k in range(down_time):
+            for k in range(1,down_time+1):
                 p = model.NewIntVar(1, 9, "")
                 tp = model.NewIntVar(0, horizon, "")
                 model.Add(tp==plan2.start-k)
@@ -202,7 +203,7 @@ def slove(ins_data:JSP_Data):
             ])
 
         Visualizer.gantt_chart_console(df,colors)
-        simulate(solver,agv_history[idx])
+        simulate(solver,agv_history[0])
         print(f"Optimal Schedule Length: {solver.ObjectiveValue()}")
         print_solution(all_machines, assigned_jobs)
     else:
