@@ -1,12 +1,12 @@
 """Minimal jobshop example."""
 import collections
 from ortools.sat.python import cp_model
-from jsplab import JSP_Data
+from jsplab import InstanceJSP
 
-def slove(ins_data:JSP_Data):
+def slove(ins_data:InstanceJSP):
     """Minimal jobshop problem."""
     # Data.
-    jobs_data =ins_data.jobs_data
+    jobs_data =ins_data.data.jobs_data
 
     machines_count = 1 + max(task.machine for job in jobs_data for task in job)
     all_machines = range(machines_count)

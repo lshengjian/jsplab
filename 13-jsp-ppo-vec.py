@@ -18,11 +18,11 @@ def train():
     envs = make_vec_env("jsp-graph-v1", n_envs=6, seed=0,env_kwargs={
         'jps_instance':data,
         'action_mode':'job',
-        'default_visualisations':["gantt_console"],
+        'default_visualisations':[],#["graph_console"],
         'perform_left_shift_if_possible':True
         })
  
-    model = PPO("MlpPolicy", envs, verbose=0)
+    model = PPO("MlpPolicy", envs)
     # Train the agent and display a progress bar
     model.learn(total_timesteps=int(2e5), progress_bar=True)
     # Save the agent

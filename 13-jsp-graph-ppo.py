@@ -33,9 +33,12 @@ def train():
 
     env = ActionMasker(env, mask_fn)
 
-    model = sb3_contrib.MaskablePPO(MaskableActorCriticPolicy, env, verbose=1)
+    model = sb3_contrib.MaskablePPO(MaskableActorCriticPolicy, env, verbose=0)
 
     # Train the agent
     log.info("training the model")
-    model.learn(total_timesteps=10_000)
+    model.learn(total_timesteps=20_000)
     model.save('jsp-3x3')
+
+if __name__ == '__main__':
+    train()

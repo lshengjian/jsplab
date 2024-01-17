@@ -5,9 +5,8 @@ from pathlib import Path
 def main():
     dir = Path(__file__).parent
     ds = load_data_list(dir/'data/jsp_demo/study')
-    d: JSP_Data = ds[0]
-   
-    slove(d)
+  
+    slove(ds[0])
 
 if __name__ == "__main__":
     main()
