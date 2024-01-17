@@ -28,7 +28,16 @@ class InstanceJSP(Instance):
                 job.append(Operate_type(m,t))
             jobs.append(job)    
         self.data=JSP_Data(self.name,jobs)
-                
+    def to_list2(self):
+        ms,ts=[],[]
+        for job,tasks in enumerate(self.data.jobs_data):
+            t1,t2=[],[]
+            for task in tasks:
+                t1.append(task[0])   
+                t2.append(task[1])  
+            ms.append(t1) 
+            ts.append(t2) 
+        return ms,ts           
 
     def to_text(self, separator='\t'):
         """

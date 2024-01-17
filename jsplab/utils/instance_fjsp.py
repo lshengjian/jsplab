@@ -56,7 +56,7 @@ class InstanceFJSP(Instance):
             line = f'{num_tasks_job[j]}'
             for _ in range(num_tasks_job[j]):
                 indexs_machine = np.where(op_pt[op_idx] > 0)[
-                    0]  # np.whaer 返回元组(indexs,)
+                    0]  # np.where 返回元组(indexs,)
                 line = line + f'{separator}{len(indexs_machine)}'
                 for k in indexs_machine:
                     line = line + \

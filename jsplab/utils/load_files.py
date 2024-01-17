@@ -28,6 +28,6 @@ def load_data_list(directory: str) -> List[Instance_Data]:
             elif file.suffix=='.js':
                 ins=InstanceJSP(file.stem)
             ins.parse(text)
-            rt.append(ins.data)
+            rt.append(ins)
 
     return rt
