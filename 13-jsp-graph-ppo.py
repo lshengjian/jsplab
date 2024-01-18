@@ -9,7 +9,7 @@ from jsplab.envs.jsp_graph import log,GraphJspEnv
 from sb3_contrib.common.wrappers import ActionMasker
 from sb3_contrib.common.maskable.policies import MaskableActorCriticPolicy
 from jsplab import InstanceJSP
-from jsplab.utils import  load_data_list
+from jsplab.instances import  load_data_list
 from pathlib import Path
 def mask_fn(env: gym.Env) -> np.ndarray:
     return env.valid_action_mask()

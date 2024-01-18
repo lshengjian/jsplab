@@ -2,7 +2,7 @@ import gymnasium as gym
 import jsplab.envs
 import numpy as np
 from jsplab import JSP_Data,InstanceJSP
-from jsplab.utils import  load_data_list
+from jsplab.instances import  load_data_list
 
 from pathlib import Path
 from stable_baselines3 import PPO
