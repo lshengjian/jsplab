@@ -5,12 +5,12 @@ from typing import List
 import pandas as pd
 import gymnasium as gym
 import numpy as np
-from jsplab import JSP_Data,Operate_type
+from jsplab import JSP_Data, OperateType
 from pathlib import Path
 
 
 class JspEnv(gym.Env):
-    def __init__(self, data:JSP_Data,render_mode=None):
+    def __init__(self, data: JSP_Data, render_mode=None):
         self.render_mode = render_mode
         """
         This environment model the job shop scheduling problem as a single agent problem:
@@ -27,13 +27,14 @@ class JspEnv(gym.Env):
         -
         :param data: JSP instance data
         """
-        self.instance_matrix:List[List[Operate_type]] = data.jobs_data
+        self.instance_matrix: List[List[OperateType]] = data.jobs_data
 
         # initial values for variables used for instance
         self.nb_jobs = len(self.instance_matrix)
-        self.nb_machines = max([task[0] for j in self.instance_matrix for task in j])+1
-        #self.instance_matrix = np.zeros((self.nb_jobs, self.nb_machines), dtype=(int, 2))
-        self.jobs_op_time =np.zeros(self.nb_jobs, dtype=int)
+        self.nb_machines = max([task[0]
+                               for j in self.instance_matrix for task in j])+1
+        # self.instance_matrix = np.zeros((self.nb_jobs, self.nb_machines), dtype=(int, 2))
+        self.jobs_op_time = np.zeros(self.nb_jobs, dtype=int)
         self.max_time_op = 0
         self.max_time_jobs = 0
         self.nb_legal_actions = 0
@@ -60,11 +61,11 @@ class JspEnv(gym.Env):
         # initial values for variables used for representation
         self.start_timestamp = datetime.datetime.now().timestamp()
         self.sum_op = 0
-        for job,tasks in enumerate(self.instance_matrix):
-            for i,task in enumerate(tasks):
-                machine,duration=task
+        for job, tasks in enumerate(self.instance_matrix):
+            for i, task in enumerate(tasks):
+                machine, duration = task
                 print(f'J-{i+1} ({machine},{duration})')
-                #self.instance_matrix[job][i] = (machine, duration)
+                # self.instance_matrix[job][i] = (machine, duration)
                 self.max_time_op = max(self.max_time_op, duration)
                 self.jobs_op_time[job] += duration
                 self.sum_op += duration
@@ -92,8 +93,8 @@ class JspEnv(gym.Env):
             -Total IDLE time in the schedule
         """
         self.observation_space = gym.spaces.Box(
-                    low=0.0, high=1.0, shape=(self.nb_jobs*7,), dtype=float
-                )
+            low=0.0, high=1.0, shape=(self.nb_jobs*7,), dtype=float
+        )
         # self.observation_space = gym.spaces.Dict(
         #     {
         #         "action_mask": gym.spaces.Box(0, 1, shape=(self.nb_jobs + 1,)),
@@ -104,15 +105,15 @@ class JspEnv(gym.Env):
         # )
 
     def _get_current_state_representation(self):
-        
+
         self.state[:, 0] = self.legal_actions[:-1]
-        #print(self.legal_actions,self.state[:, 0])
+        # print(self.legal_actions,self.state[:, 0])
         return self.state.reshape(-1)
 
     def get_legal_actions(self):
         return self.legal_actions
 
-    def reset(self ,seed=None, options=None):
+    def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         self.current_time_step = 0
         self.next_time_step = list()
@@ -123,15 +124,19 @@ class JspEnv(gym.Env):
         self.legal_actions = np.ones(self.nb_jobs + 1, dtype=int)
         self.legal_actions[self.nb_jobs] = 0
         # used to represent the solution
-        self.solution = np.full((self.nb_jobs, self.nb_machines), -1, dtype=int)
-        self.time_until_available_machine = np.zeros(self.nb_machines, dtype=int)
-        self.time_until_finish_current_op_jobs = np.zeros(self.nb_jobs, dtype=int)
+        self.solution = np.full(
+            (self.nb_jobs, self.nb_machines), -1, dtype=int)
+        self.time_until_available_machine = np.zeros(
+            self.nb_machines, dtype=int)
+        self.time_until_finish_current_op_jobs = np.zeros(
+            self.nb_jobs, dtype=int)
         self.todo_time_job_task = np.zeros(self.nb_jobs, dtype=int)
         self.total_perform_op_time_jobs = np.zeros(self.nb_jobs, dtype=int)
         self.needed_machine_jobs = np.zeros(self.nb_jobs, dtype=int)
         self.total_idle_time_jobs = np.zeros(self.nb_jobs, dtype=int)
         self.idle_time_jobs_last_op = np.zeros(self.nb_jobs, dtype=int)
-        self.illegal_actions = np.zeros((self.nb_machines, self.nb_jobs), dtype=int)
+        self.illegal_actions = np.zeros(
+            (self.nb_machines, self.nb_jobs), dtype=int)
         self.action_illegal_no_op = np.zeros(self.nb_jobs, dtype=int)
         self.machine_legal = np.zeros(self.nb_machines, dtype=int)
         for job in range(self.nb_jobs):
@@ -141,7 +146,7 @@ class JspEnv(gym.Env):
                 self.machine_legal[needed_machine] = 1
                 self.nb_machine_legal += 1
         self.state = np.zeros((self.nb_jobs, 7), dtype=float)
-        return self._get_current_state_representation(),{"action_mask": self.legal_actions}
+        return self._get_current_state_representation(), {"action_mask": self.legal_actions}
 
     def _prioritization_non_final(self):
         if self.nb_machine_legal >= 1:
@@ -211,7 +216,8 @@ class JspEnv(gym.Env):
                     max_horizon_machine[machine_needed] = min(
                         max_horizon_machine[machine_needed], end_job
                     )
-                    max_horizon = max(max_horizon, max_horizon_machine[machine_needed])
+                    max_horizon = max(
+                        max_horizon, max_horizon_machine[machine_needed])
             for job in range(self.nb_jobs):
                 if not self.legal_actions[job]:
                     if (
@@ -264,7 +270,7 @@ class JspEnv(gym.Env):
 
     def step(self, action: int):
         reward = 0.0
-        if action == self.nb_jobs:# end
+        if action == self.nb_jobs:  # end
             self.nb_machine_legal = 0
             self.nb_legal_actions = 0
             for job in range(self.nb_jobs):
@@ -293,10 +299,11 @@ class JspEnv(gym.Env):
             reward += time_needed
             self.time_until_available_machine[machine_needed] = time_needed
             self.time_until_finish_current_op_jobs[action] = time_needed
-            self.state[action][1] = time_needed / self.max_time_op #归一化的加工时间
+            self.state[action][1] = time_needed / self.max_time_op  # 归一化的加工时间
             to_add_time_step = self.current_time_step + time_needed
             if to_add_time_step not in self.next_time_step:
-                index = bisect.bisect_left(self.next_time_step, to_add_time_step)
+                index = bisect.bisect_left(
+                    self.next_time_step, to_add_time_step)
                 self.next_time_step.insert(index, to_add_time_step)
                 self.next_jobs.insert(index, action)
             self.solution[action][current_time_step_job] = self.current_time_step
@@ -350,19 +357,23 @@ class JspEnv(gym.Env):
                     0, self.time_until_finish_current_op_jobs[job] - difference
                 )
                 self.state[job][1] = (
-                    self.time_until_finish_current_op_jobs[job] / self.max_time_op
+                    self.time_until_finish_current_op_jobs[job] /
+                    self.max_time_op
                 )
                 self.total_perform_op_time_jobs[job] += performed_op_job
                 self.state[job][3] = (
                     self.total_perform_op_time_jobs[job] / self.max_time_jobs
                 )
                 if self.time_until_finish_current_op_jobs[job] == 0:
-                    self.total_idle_time_jobs[job] += difference - was_left_time
+                    self.total_idle_time_jobs[job] += difference - \
+                        was_left_time
                     self.state[job][6] = self.total_idle_time_jobs[job] / self.sum_op
-                    self.idle_time_jobs_last_op[job] = difference - was_left_time
+                    self.idle_time_jobs_last_op[job] = difference - \
+                        was_left_time
                     self.state[job][5] = self.idle_time_jobs_last_op[job] / self.sum_op
                     self.todo_time_job_task[job] += 1
-                    self.state[job][2] = self.todo_time_job_task[job] / self.nb_machines
+                    self.state[job][2] = self.todo_time_job_task[job] / \
+                        self.nb_machines
                     if self.todo_time_job_task[job] < self.nb_machines:
                         self.needed_machine_jobs[job] = self.instance_matrix[job][
                             self.todo_time_job_task[job]
@@ -448,6 +459,3 @@ class JspEnv(gym.Env):
             #     autorange="reversed"
             # )  # otherwise tasks are listed from the bottom up
         return df
-
-
-

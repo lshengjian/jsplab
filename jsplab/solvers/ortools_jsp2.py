@@ -7,7 +7,7 @@ import matplotlib
 import numpy as np
 import pandas as pd
 from jsplab import JSP_Data
-from jsplab.utils.gantt import Visualizer
+from jsplab.instances.gantt import Visualizer
 machine_offsets=[1,4,7]
 agv_offsets=[4]
 agv_up_time=1

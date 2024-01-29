@@ -1,5 +1,5 @@
 
-from jsplab.utils.text_helper import text2nums, clean_comment
+from jsplab.instances.text_helper import text2nums, clean_comment
 
 
 
