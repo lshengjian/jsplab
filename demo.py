@@ -1,41 +1,32 @@
-from jsplab.instances.linklist import *
-from jsplab.instances.instance import *
-from jsplab.solvers.ortools_fjsp import fjsp_solver
 
+from jsplab.instances import JobShopFactory
+from jsplab.instances.parsers import  IParse,ParserExcel,ParserStandardJspFile,ParserFjspFile
+from jsplab.instances.maker import *
+from jsplab.agents.solver.jsp import solve_jsp 
+from jsplab.core import convert2jsp_data
+from jsplab.instances import InstanceInfo
+import numpy as np
 if __name__ == '__main__':
-    ins=Instance('jsp_2x3')
-    ins.parse('data/jsp_demo/jsp2x3.xlsx')
-    d,t=fjsp_solver(ins)
-    print(d,t)
-    ins=Instance('fjsp_10x6')
-    with open('data/fjsp/MK/Mk02.fjs','r') as f:
-        text=f.readlines()
+    info=InstanceInfo('test',first_agv_index=3)
+    print(info)
+    # parser:IParse=ParserStandardJspFile()
+    # name,data=parser.parse('jsp/demo1/3x3')
+    # data=convert2jsp_data(data)
+    # solve_jsp(data)
+
+    # instance_list=[data]
+
+    # main('fjssp/config_job3_task4_tools0.pkl','makespan')
+    #instance_list=JobShopFactory.generate_instances()
 
 
 
-    ins.parse_text(text)
-    d,t=fjsp_solver(ins)
-    print(d,t)
+    # instance_list=compute_initial_instance_solution(instance_list,{})
+    # JobShopFactory.set_deadlines_to_max_deadline_per_job(instance_list, 2)
+    # JobShopFactory.compute_and_set_hashes(instance_list)
+    # or_tool_solver = OrToolSolver()
+    # for data in instance_list:
+    #     assigned_jobs, objective_value = or_tool_solver.optimize(data, objective='makespan')
+    #     print(objective_value)
 
-
-    # 创建一个字符串链表
-    # str_list = LinkedList[str]()
-    # str_list.append('a')
-    # str_list.append('b')
-    # str_list.append('c')
-    # str_list.display()
-    # # 创建一个链表
-    # llist: LinkedList = LinkedList[int]()
-    # llist.append(1)
-    # llist.append(2)
-    # llist.append(3)
-    # llist.append(4)
-    # llist.append(5)
-
-    # # 显示链表内容
-    # llist.display()
-
-    # # 使用 lambda 表达式查找偶数
-    # even_numbers: List[Node] = llist.find(lambda x: x % 2 == 0)
-    # print("Even numbers:", list(map(str,even_numbers)))
 

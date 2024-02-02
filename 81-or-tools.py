@@ -51,6 +51,6 @@ if __name__ == '__main__':
 
     # get config_file from terminal input
     #parse_args = get_parser_args()
-    config_file_path ='data_generation/jssp/config_job2_task3_tools0.yaml'
-
+    #config_file_path ='data_generation/jssp/config_job2_task3_tools0.yaml'
+    config_file_path ='data_generation/jssp/config_job3_task4_tools0.yaml'
     main(config_file_name=config_file_path)

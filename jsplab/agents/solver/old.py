@@ -16,9 +16,9 @@ from typing import List
 import argparse
 import copy
 
-from src.data_generator.task import Task
-from src.utils.file_handler.data_handler import DataHandler
-from src.visuals_generator.gantt_chart import GanttChartPlotter
+from jsplab.core import Task
+from jsplab.utils.file_handler.data_handler import DataHandler
+#from src.visuals_generator.gantt_chart import GanttChartPlotter
 
 
 # constants
@@ -216,7 +216,7 @@ class OrToolSolver:
                     start = assigned_task.start
                     duration = assigned_task.duration
                     tool = assigned_task.tool
-                    sol_tmp = f'[{start}, {start + duration}]'#, tool:{tool}
+                    sol_tmp = f'[{start}, {start + duration}]'#,  tool:{tool}
                     # Add spaces to output to align columns.
                     sol_line += '%-9s' % sol_tmp
 
@@ -228,11 +228,10 @@ class OrToolSolver:
             # # Finally print the solution found.
             print(f'Minimal {objective}: {solver.ObjectiveValue()}')
             print(output)
-            return assigned_jobs, solver.ObjectiveValue()
         else:
             print('No solution found.')
 
-        
+        return assigned_jobs, solver.ObjectiveValue()
 
     @staticmethod
     def parse_instance_to_solver_format(instance: List[Task]):
@@ -246,25 +245,22 @@ class OrToolSolver:
         :Example: Job2 = [([0, 2, 3], 8, 0, 4), ([0, 2, 3], 6, 0, 2), ...]
 
         """
-        jobs_dict = {}
+        jobs_dict = collections.defaultdict(list)#{}
         for task in instance:
-            
             task_info = [np.nonzero(task.machines)[0].tolist(), task.runtime]
-            task_info.append(0)
-
-
+            
             # set deadline to 0, if this task is not the terminal task
-            # if task.deadline != task._deadline:
-            #     task_info.append(0)
-            # else:
-            #     task_info.append(task.deadline)
+            if task.deadline != task._deadline:
+                task_info.append(0)
+            else:
+                task_info.append(task.deadline)
 
             task_info.append(np.nonzero(task.tools)[0].tolist())
 
             job_num = task.job_index
             # if the job list in the dictionary is empty, initialize it
-            if job_num not in jobs_dict:
-                jobs_dict[job_num] = []
+            # if job_num not in jobs_dict:
+            #     jobs_dict[job_num] = []
 
             jobs_dict[job_num].append(task_info)
 
@@ -292,7 +288,7 @@ class OrToolSolver:
                 machines = np.zeros(max_machine_num)
                 machines[assigned_task.machines] = 1
                 task = Task(job_index=job_index, task_index=task_index,
-                            machines=machines,
+                            machine_times=machines,
                             tools=assigned_task.tool, deadline=assigned_task.duedate, done=True,
                             runtime=assigned_task.duration, started=assigned_task.start,
                             finished=assigned_task.start+assigned_task.duration, selected_machine=machine)
@@ -307,7 +303,7 @@ def get_perser_args():
     # Arguments for function
     parser = argparse.ArgumentParser(description='Solver for computing solution of scheduling problems')
 
-    parser.add_argument('-fp', '--instances_file_path', type=str, required=True,
+    parser.add_argument('-fp', '--instances_file_path', type=str, required=True,default="instances/fjssp/config_job3_task4_tools0.pkl",
                         help='Path to instances data file you want to solve')
     parser.add_argument('-write', '--write_to_file', dest='write_to_file', action='store_true',
                         help='Enable or disable result export to file')
@@ -322,7 +318,7 @@ def get_perser_args():
     return args
 
 
-def main(instances_data_file_path, solver_objective, write_to_file=False, plot_gantt_chart=False):
+def main(instances_data_file_path, solver_objective=None, write_to_file=False, plot_gantt_chart=False):
 
     # load and parse jobs
     data = DataHandler.load_instances_data_file(instances_data_file_path=instances_data_file_path)
@@ -335,14 +331,14 @@ def main(instances_data_file_path, solver_objective, write_to_file=False, plot_g
         assigned_jobs, objective_value = or_tool_solver.optimize(sample_instance, objective=solver_objective)
 
         # get solution into Task format
-        parsed_data = or_tool_solver.parse_to_plottable_format(sample_instance, assigned_jobs)
-        solved_data.append(parsed_data)
-        if plot_gantt_chart:
-            GanttChartPlotter.get_gantt_chart_image(parsed_data, show_image=True, return_image=False)
+        # parsed_data = or_tool_solver.parse_to_plottable_format(sample_instance, assigned_jobs)
+        # solved_data.append(parsed_data)
+        # if plot_gantt_chart:
+        #     GanttChartPlotter.get_gantt_chart_image(parsed_data, show_image=True, return_image=False)
 
     # Write solved data to file
-    if write_to_file:
-        DataHandler.write_solved_data_to_file(instances_data_file_path, solved_data)
+    # if write_to_file:
+    #     DataHandler.write_solved_data_to_file(instances_data_file_path, solved_data)
 
 
 if __name__ == '__main__':

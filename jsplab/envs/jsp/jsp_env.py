@@ -5,7 +5,7 @@ from typing import List
 import pandas as pd
 import gymnasium as gym
 import numpy as np
-from jsplab import JSP_Data, OperateType
+from jsplab.core import JSP_Data, OperateType
 from pathlib import Path
 
 
