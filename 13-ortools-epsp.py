@@ -3,8 +3,9 @@ from jsplab.agents.solver.epsp import solve_epsp
 
 if __name__ == '__main__':
     parser:IParse=ParserExcel()
-    info=parser.parse('epsp/demo/2x(4+2).xlsx')
-    parser.debug(info)
+    #info=parser.parse('epsp/demo/2x(4+2).xlsx')
+    info=parser.parse('epsp/demo/1x(3+1).xlsx')
+    #parser.debug(info)
     solve_epsp(info)
 
 

@@ -45,16 +45,16 @@ def get_assigned(jobs,all_tasks,solver,presences):
             )
     return assigned_jobs
 
-def view_solution(all_machines,assigned_jobs):
+def view_solution(offsets,assigned_jobs):
     print('Solution:')
     output = ''
-    ms=list(all_machines)
+    
     #ms.reverse()
-    for machine in ms:
+    for machine,x in enumerate(offsets):
         # Sort by starting time.
         assigned_jobs[machine].sort()
-        sol_line_tasks = f'M{str(machine+1)}: '
-        sol_line = ' '*4
+        sol_line_tasks = f'M{str(machine+1)}[{x}]: '
+        sol_line = ' '*7
         for t in assigned_jobs[machine]:
             name = f'{t.job+1}-{t.index+1}'
             # Add spaces to output to align columns.

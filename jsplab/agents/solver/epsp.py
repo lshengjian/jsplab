@@ -89,25 +89,27 @@ def solve_epsp(info: InstanceInfo):
                     pre_machine_x=model.NewIntVar(0,9,'')
                     agv_x=model.NewIntVar(0,9,'')
 
-                    model.AddElement(pre_machine,offsets_var,pre_machine_x)#.OnlyEnforceIf(machine_usage)
-                    model.AddElement(tmp_index,agv_steps,agv_x)#.OnlyEnforceIf(machine_usage)
+                    model.AddElement(pre_machine,offsets_var,pre_machine_x)
+                    model.AddElement(tmp_index,agv_steps,agv_x)
                     model.Add(agv_x==pre_machine_x).OnlyEnforceIf(machine_usage)
                     
 
                 elif task_id>0:# 当前电镀处理位置是AGV结束作业位置
                     pre_agv_task=all_tasks[job_id, task_id-1]
                     pre_op_task=all_tasks[job_id, task_id-2]
-                    #model.Add(tmp_index == (pre_agv_task.machine-agv_num)*horizon+pre_agv_task.end)#.OnlyEnforceIf(machine_usage)
-                    # cur_machine_x=model.NewIntVar(min_x,max_x,'')
-                    # pre_machine_x=model.NewIntVar(min_x,max_x,'')
-                    # agv_x=model.NewIntVar(min_x,max_x,'')
-                    # model.AddElement(alt.machine,offsets_var,cur_machine_x)
-                    # model.AddElement(pre_op_task.machine,offsets_var,pre_machine_x)
-                    # model.AddElement(tmp_index,agv_steps,agv_x)
-                    # model.Add(agv_x==cur_machine_x).OnlyEnforceIf(machine_usage)
-                    # #前个AGV运输时间
-                    # tp_time=model.NewIntVar(0,max_x-min_x,'')
-                    # model.AddAbsEquality(tp_time,cur_machine_x-pre_machine_x).OnlyEnforceIf(machine_usage)
+                    agv_index=pre_agv_task.machine-agv_start
+                    model.Add(tmp_index == agv_index*horizon+pre_agv_task.end).OnlyEnforceIf(machine_usage)
+                    cur_machine_x=model.NewIntVar(min_x,max_x,'')
+                    pre_machine_x=model.NewIntVar(min_x,max_x,'')
+                    agv_x=model.NewIntVar(min_x,max_x,'')
+                    model.AddElement(alt.machine,offsets_var,cur_machine_x)
+                    model.AddElement(pre_op_task.machine,offsets_var,pre_machine_x)
+                    model.AddElement(tmp_index,agv_steps,agv_x)
+                    model.Add(agv_x==cur_machine_x).OnlyEnforceIf(machine_usage)
+                    #AGV运输时间
+                    #tp_time=model.NewIntVar(0,max_x-min_x,'')
+                    model.Add(pre_agv_task.end-pre_agv_task.start>4).OnlyEnforceIf(machine_usage)
+                    #model.AddAbsEquality(tp_time,cur_machine_x-pre_machine_x).OnlyEnforceIf(machine_usage)
                     # model.Add(pre_agv_task.end-pre_agv_task.start==tp_time).OnlyEnforceIf(machine_usage)
 
 
@@ -154,6 +156,8 @@ def solve_epsp(info: InstanceInfo):
         print("Solve status: %s" % solver.StatusName(status))
         print("Optimal objective value: %i" % solver.ObjectiveValue())
         data = get_assigned(jobs, all_tasks, solver, machine_usages)
-        view_solution(all_machines, data)
+        view_solution(offsets, data)
+        for i,x in enumerate(agv_steps):
+            print(f'{i}:{solver.Value(x)}')
     else:
         print("Not found solution!")
