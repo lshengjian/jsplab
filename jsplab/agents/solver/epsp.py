@@ -3,12 +3,43 @@ from .util import *
 from jsplab.core import convert2fjsp_data
 from jsplab.instances.parsers import InstanceInfo
 from typing import  List
+import time
 
-def solve_epsp(info: InstanceInfo):
+def simulate(solver,agv_pos,machine_offsets):
+    # machines_pos=machine_offsets
+    n=int(solver.ObjectiveValue())
+    info=[str(i) for i in range(0,10)]
+    info=''.join(info)
+    print(f'\r{info}')
+    s1=''
+    s2=''
+    max_pos=max(machine_offsets)
+
+    for i in range(n):
+        info=list(' '*max_pos)
+        
+        for p in machine_offsets:
+            info[p-1]='\033[0;50m'+' \033[0m'
+
+        d=solver.Value(agv_pos[i])-1
+        info[d]='\033[0;40;32m'+'o\033[0m'
+        info=''.join(info)
+        print(f'\r{info}',end='')
+        time.sleep(0.2) 
+        s1+=f'{i%10}'
+        s2+=str(solver.Value(agv_pos[i]))
+    print()
+    print(s1)
+    print(s2)
+
+#def limit_stay(model,pos,time=2,dir=1):
+
+
+def solve_epsp(info: InstanceInfo,agv_up_time=2,agv_down_time=2):
     """Solve a small ep jobshop problem."""
     machines_count = len(info.machine_offsets)
     horizon = sum(task.runtime for task in info.jobs)
-    horizon+=horizon//10
+    horizon+=horizon//5
     print(f"Horizon :{horizon}")
 
     jobs = convert2fjsp_data(info.jobs)
@@ -27,8 +58,8 @@ def solve_epsp(info: InstanceInfo):
         agv_steps[agv*horizon]=model.NewConstant(offsets[agv_start + agv])
         for t in range(1, horizon):
             idx=agv*horizon+t
-            agv_steps[idx]=model.NewIntVar(min_x, max_x, "")
-            tp = model.NewIntVar(0, 1, "")
+            agv_steps[idx]=model.NewIntVar(min_x, max_x, f'agv{agv}_{idx}')
+            tp = model.NewIntVar(0, 1,'')
             p2 = agv_steps[idx]
             p1 = agv_steps[idx - 1]
             model.AddAbsEquality(tp, p2 - p1)  # 确保天车一个时间单位最多只移动一个位置
@@ -49,7 +80,7 @@ def solve_epsp(info: InstanceInfo):
             suffix = "_%i_%i" % (job_id, task_id)
             duration_var = model.NewConstant(task[0].duration)
             if task_id%2==1:
-                duration_var = model.NewIntVar(0,max_x-min_x, f"duration{suffix}")
+                duration_var = model.NewIntVar(0,max_x-min_x+agv_up_time+agv_down_time, f"duration{suffix}")
             
             start_var = model.NewIntVar(0, horizon , f"start{suffix}")
             end_var = model.NewIntVar(0, horizon, f"end{suffix}")
@@ -74,46 +105,59 @@ def solve_epsp(info: InstanceInfo):
 
                 alt_duration=model.NewConstant(alt.duration)
                 # Link the master variables with the local ones
+                
                 model.Add(machine_var == alt.machine).OnlyEnforceIf(machine_usage)
                 model.Add(start_var == alt_start).OnlyEnforceIf(machine_usage)
                 model.Add(end_var == alt_end).OnlyEnforceIf(machine_usage)
                 machine_usages[(job_id, task_id, alt_id)] = machine_usage
-                tmp_index=model.NewIntVar(0, horizon*agv_num,'')
                 
-                if task_id%2==1:# AGV开始作业位置是前一加工机器的位置
-                    alt_duration=model.NewIntVar(4,max_x-min_x, f"duration{alternative_suffix}")
-                    agv_index=alt.machine-agv_start
-                    #print(alt.machine,agv_index)
-                    model.Add(tmp_index == agv_index*horizon+alt_start).OnlyEnforceIf(machine_usage)
-                    pre_machine=all_tasks[job_id, task_id-1].machine
-                    pre_machine_x=model.NewIntVar(0,9,'')
-                    agv_x=model.NewIntVar(0,9,'')
+                time_step=model.NewIntVar(0, horizon*agv_num,'')
+                cur_machine_x=model.NewIntVar(min_x,max_x,'')
+                model.AddElement(alt.machine,offsets_var,cur_machine_x)
+                agv_x=model.NewIntVar(min_x,max_x,'')
 
+                if task_id%2==1:# AGV开始作业位置是前一加工机器的位置
+                    alt_duration=duration_var
+                    agv_index=alt.machine-agv_start
+                    model.Add(time_step == agv_index*horizon+alt_start).OnlyEnforceIf(machine_usage)
+                    pre_machine=all_tasks[job_id, task_id-1].machine
+                    pre_machine_x=model.NewIntVar(min_x,max_x,'')
+                    
                     model.AddElement(pre_machine,offsets_var,pre_machine_x)
-                    model.AddElement(tmp_index,agv_steps,agv_x)
+                    model.AddElement(time_step,agv_steps,agv_x)
                     model.Add(agv_x==pre_machine_x).OnlyEnforceIf(machine_usage)
                     
 
                 elif task_id>0:# 当前电镀处理位置是AGV结束作业位置
-                    pre_agv_task=all_tasks[job_id, task_id-1]
-                    pre_op_task=all_tasks[job_id, task_id-2]
-                    agv_index=pre_agv_task.machine-agv_start
-                    model.Add(tmp_index == agv_index*horizon+pre_agv_task.end).OnlyEnforceIf(machine_usage)
-                    cur_machine_x=model.NewIntVar(min_x,max_x,'')
-                    pre_machine_x=model.NewIntVar(min_x,max_x,'')
-                    agv_x=model.NewIntVar(min_x,max_x,'')
-                    model.AddElement(alt.machine,offsets_var,cur_machine_x)
-                    model.AddElement(pre_op_task.machine,offsets_var,pre_machine_x)
-                    model.AddElement(tmp_index,agv_steps,agv_x)
+                    agv_task=all_tasks[job_id, task_id-1]
+                    pre_op=all_tasks[job_id, task_id-2]
+                    agv_index=agv_task.machine-agv_start
+                    model.Add(time_step == agv_index*horizon+agv_task.end).OnlyEnforceIf(machine_usage)
+                    model.AddElement(time_step,agv_steps,agv_x)
                     model.Add(agv_x==cur_machine_x).OnlyEnforceIf(machine_usage)
+                   
                     #AGV运输时间
-                    #tp_time=model.NewIntVar(0,max_x-min_x,'')
-                    model.Add(pre_agv_task.end-pre_agv_task.start>4).OnlyEnforceIf(machine_usage)
-                    #model.AddAbsEquality(tp_time,cur_machine_x-pre_machine_x).OnlyEnforceIf(machine_usage)
-                    # model.Add(pre_agv_task.end-pre_agv_task.start==tp_time).OnlyEnforceIf(machine_usage)
+                    pre_machine_x=model.NewIntVar(min_x,max_x,'')
+                    model.AddElement(pre_op.machine,offsets_var,pre_machine_x)
+                    dis=model.NewIntVar(0,max_x-min_x,'')
+                    model.AddAbsEquality(dis,cur_machine_x-pre_machine_x)
+                    model.Add(agv_task.end-agv_task.start>=dis+agv_down_time+agv_up_time).OnlyEnforceIf(machine_usage)
 
+                    for i in range(1,1+agv_up_time):
+                        p = model.NewIntVar(min_x, max_x, "")
+                        tp = model.NewIntVar(0, horizon*agv_num, "")
+                        model.Add(tp == agv_index*horizon+agv_task.start+i).OnlyEnforceIf(machine_usage)
+                        model.AddElement(tp,agv_steps,p)
+                        model.Add(p==pre_machine_x).OnlyEnforceIf(machine_usage)
 
+                    for i in range(1,1+agv_down_time):
+                        p = model.NewIntVar(min_x, max_x, "")
+                        tp = model.NewIntVar(0, horizon*agv_num, "")
+                        model.Add(tp == agv_index*horizon+agv_task.end-i).OnlyEnforceIf(machine_usage)
+                        model.AddElement(tp,agv_steps,p)
+                        model.Add(p==cur_machine_x).OnlyEnforceIf(machine_usage)
 
+                model.Add(alt_duration == duration_var).OnlyEnforceIf(machine_usage)
                 alt_interval = model.NewOptionalIntervalVar(
                     alt_start,
                     alt_duration,
@@ -157,7 +201,8 @@ def solve_epsp(info: InstanceInfo):
         print("Optimal objective value: %i" % solver.ObjectiveValue())
         data = get_assigned(jobs, all_tasks, solver, machine_usages)
         view_solution(offsets, data)
-        for i,x in enumerate(agv_steps):
-            print(f'{i}:{solver.Value(x)}')
+        simulate(solver,agv_steps,offsets)
+        # for i,x in enumerate(agv_steps):
+        #     print(f'{i}:{solver.Value(x)}')
     else:
         print("Not found solution!")

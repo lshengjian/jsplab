@@ -4,6 +4,9 @@ from typing import List,Dict
 import numpy as np
 from collections import defaultdict,namedtuple
 
+__all__=[ 'defaultdict','namedtuple', 'OpTime','Task', \
+          'convert2jsp_data','convert2fjsp_data'
+         ]
 
 OpTime = namedtuple("OpTime", "machine duration")
 # Point = namedtuple('Point', ['x', 'y'], defaults=(0.0, 0.0))

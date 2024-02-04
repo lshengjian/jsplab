@@ -1,18 +1,23 @@
-import collections
 from typing import List
 from enum import Enum
 from rich.console import Console
-import numpy as np
 
-__all__=['JobShopType','console','one_hot']
+
+__all__=['MoveType','MOVE_FLAGS','JobShopType','console']
 
 console = Console()
 
 
-def one_hot(index:int,size:int):
-    rt=np.zeros((size,))
-    rt[index]=1
-    return rt#.tolist()
+class MoveType(Enum):
+    stop='o'
+    right='→'
+    up='↑'
+    left='←'
+    down='↓'
+    def __str__(self):
+        return self.value
+
+MOVE_FLAGS = [flag for _, flag in MoveType.__members__.items()]
 
 class JobShopType(Enum):
     jsp = "_generate_instance_jsp"

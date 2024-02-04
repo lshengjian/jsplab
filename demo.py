@@ -1,14 +1,17 @@
 
-from jsplab.instances import JobShopFactory
-from jsplab.instances.parsers import  IParse,ParserExcel,ParserStandardJspFile,ParserFjspFile
-from jsplab.instances.maker import *
-from jsplab.agents.solver.jsp import solve_jsp 
-from jsplab.core import convert2jsp_data
-from jsplab.instances import InstanceInfo
+#from jsplab.instances import JobShopFactory
+from jsplab.utils.comm_helper import update_agv_history
 import numpy as np
 if __name__ == '__main__':
-    info=InstanceInfo('test',first_agv_index=3)
-    print(info)
+    #time   0   1   2   3   4   5   6   7   8   9   0   1   2   3   4
+    pos   =[3,  2,  1,  0,  0,  0,  1,  2,  3,  4,  4,  4,  3,  3,  3]
+    #      '←','←','←','o','o','→','→','→','→','o','o','←','o','o','o'
+    #      '←','←','←','↑','↑','→','→','→','→','↓','↓','←','o','o','o'
+
+    #['←', '←', '←', '↑', '↑', '→', '→', '→', '→', '↓', '↓', '←', 'o', 'o', 'o']
+    info=update_agv_history(pos,[(3,11)])
+    print(list(map(str,info)))
+
     # parser:IParse=ParserStandardJspFile()
     # name,data=parser.parse('jsp/demo1/3x3')
     # data=convert2jsp_data(data)

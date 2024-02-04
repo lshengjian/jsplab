@@ -1,5 +1,6 @@
 import itertools
 from jsplab.core import Task
+from jsplab.utils.comm_helper import update_agv_history
 import numpy as np
 def test_combination():
     data=list(itertools.product([0, 1], repeat=3))
@@ -19,3 +20,13 @@ def test_task():
     msg=str(task)
     assert 'J1-2|20'==msg
     assert 'J1-2|20,[(2,3),(3,20)]'==task.str_info()
+
+def test_agv_move():
+    #time   0   1   2   3   4   5   6   7   8   9   0   1   2   3   4
+    pos   =[3,  2,  1,  0,  0,  0,  1,  2,  3,  4,  4,  4,  3,  3,  3]
+    #step1 '←','←','←','o','o','→','→','→','→','o','o','←','o','o','o'
+    #step2 '←','←','←','↑','↑','→','→','→','→','↓','↓','←','o','o','o'
+
+    info=update_agv_history(pos,[(3,11)])
+    info=list(map(str,info))
+    assert info==['←', '←', '←', '↑', '↑', '→', '→', '→', '→', '↓', '↓', '←', 'o', 'o', 'o']
