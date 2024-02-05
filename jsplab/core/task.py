@@ -52,7 +52,7 @@ class Task:
     @property 
     def machines(self):
         times=self._runtimes
-        data=np.where(data>0,np.ones_like(times),times)
+        data=np.where(times>0,np.ones_like(times),times)
         return data.tolist()
     
     @machines.setter

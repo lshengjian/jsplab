@@ -1,16 +1,14 @@
 
-#from jsplab.instances import JobShopFactory
-from jsplab.utils.comm_helper import update_agv_history
-import numpy as np
+from jsplab.agents.solver.epsp import solve_epsp
+from jsplab.instances.parsers import *
+from jsplab.utils.comm_helper import load_config
 if __name__ == '__main__':
-    #time   0   1   2   3   4   5   6   7   8   9   0   1   2   3   4
-    pos   =[3,  2,  1,  0,  0,  0,  1,  2,  3,  4,  4,  4,  3,  3,  3]
-    #      '←','←','←','o','o','→','→','→','→','o','o','←','o','o','o'
-    #      '←','←','←','↑','↑','→','→','→','→','↓','↓','←','o','o','o'
-
-    #['←', '←', '←', '↑', '↑', '→', '→', '→', '→', '↓', '↓', '←', 'o', 'o', 'o']
-    info=update_agv_history(pos,[(3,11)])
-    print(list(map(str,info)))
+    cfg=load_config('conf/demo/or-tools-solver.yaml')
+    print(cfg)
+    #parser:IParse=ParserExcel()
+    #info=parser.parse('epsp/demo/1x(3+1).xlsx')
+    #parser.debug(info)
+    #solve_epsp(info)
 
     # parser:IParse=ParserStandardJspFile()
     # name,data=parser.parse('jsp/demo1/3x3')

@@ -1,6 +1,6 @@
 import itertools
 from jsplab.core import Task
-from jsplab.utils.comm_helper import update_agv_history
+from jsplab.utils.comm_helper import get_agv_flags
 import numpy as np
 def test_combination():
     data=list(itertools.product([0, 1], repeat=3))
@@ -27,6 +27,6 @@ def test_agv_move():
     #step1 '←','←','←','o','o','→','→','→','→','o','o','←','o','o','o'
     #step2 '←','←','←','↑','↑','→','→','→','→','↓','↓','←','o','o','o'
 
-    info=update_agv_history(pos,[(3,11)])
+    info=get_agv_flags(pos,[(3,11)])
     info=list(map(str,info))
     assert info==['←', '←', '←', '↑', '↑', '→', '→', '→', '→', '↓', '↓', '←', 'o', 'o', 'o']

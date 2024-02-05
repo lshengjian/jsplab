@@ -1,12 +1,19 @@
 import numpy as np
 from typing import List,Tuple
+from omegaconf import OmegaConf
 from jsplab.core import MOVE_FLAGS,MoveType
 def one_hot(index:int,size:int):
     rt=np.zeros((size,))
     rt[index]=1
     return rt#.tolist()
 
-def update_agv_history(agv_pos:List[int],moves:List[Tuple[int,int]],down_time=2,up_time=2):
+def load_config(fname:str):
+    cfg = OmegaConf.load(fname)
+    #print(**cfg)
+    return cfg
+
+
+def get_agv_flags(agv_pos:List[int],moves:List[Tuple[int,int]],down_time=2,up_time=2):
     size=len(agv_pos)
     rt:List[str]=[MoveType.stop]*size
     for t in range(size-1):
@@ -25,4 +32,7 @@ def update_agv_history(agv_pos:List[int],moves:List[Tuple[int,int]],down_time=2,
     return rt
 
 
+if __name__ == '__main__':
+
+    load_config('conf/demo/or-tools-solver.yaml')
 
