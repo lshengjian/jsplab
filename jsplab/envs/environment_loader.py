@@ -17,9 +17,6 @@ ENVIRONMENT_MAPPER_DICT: dict = {
     }
 }
 
-# Optional ray (RLlib)
-_rllib = False
-
 
 class EnvironmentLoader:
     """
@@ -27,30 +24,16 @@ class EnvironmentLoader:
     Also checks if the environment is compatible with the chosen algorithm.
     """
     @classmethod
-    def load(cls, config: dict, check_env_agent_compatibility: bool = True, register_gym_env: bool = False, **kwargs) -> Tuple[Any, str]:
+    def load(cls, config: dict, check_env_agent_compatibility: bool = False, register_gym_env: bool = False, **kwargs) -> Tuple[Any, str]:
         """loading function"""
-        # Set environment name (use default if not in config).
-        # Check if requested environment name exists - warn if non existent and use default.
-        env_name = config.get("environment", DEFAULT_ENVIRONMENT_NAME)
-        if not config.get("environment") in ENVIRONMENT_MAPPER_DICT.keys():
-            warnings.warn(f'The environment "{config.get("environment")}" could not be found. '
-                          f'Using default environment "{DEFAULT_ENVIRONMENT_NAME}".')
-            env_name = DEFAULT_ENVIRONMENT_NAME
 
-        # Check environment/agent compatibility.
+        env_name = config.get("environment", DEFAULT_ENVIRONMENT_NAME)
+
         if check_env_agent_compatibility:
             cls.check_environment_agent_compatibility(config, env_name=env_name)
 
         # Create environment.
         env = ENVIRONMENT_MAPPER_DICT[env_name]['class'](config, **kwargs)
-
-        # If ray is used, register the new environment.
-        if register_gym_env:
-            if _rllib:
-                register_env(config.get('environment', DEFAULT_ENVIRONMENT_NAME), lambda env_: env)
-                print(f"Environment {env_name} successfully registered.")
-            else:
-                warnings.warn('User tried to register gym env via ray but ray import was not possible.')
 
         return env, env_name
 

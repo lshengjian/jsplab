@@ -17,15 +17,15 @@ from typing import Tuple, List, Dict, Union
 import numpy as np
 from tqdm import tqdm
 
-from src.environments.environment_loader import EnvironmentLoader
-from src.agents.heuristic.heuristic_agent import HeuristicSelectionAgent
-from src.utils.evaluations import EvaluationHandler
-from src.utils.logger import Logger
-from src.utils.file_handler.data_handler import DataHandler
-from src.utils.file_handler.model_handler import ModelHandler
-from src.data_generator.task import Task
-from src.agents.train_test_utility_functions import get_agent_class_from_config, load_config, load_data
-from src.agents.solver import OrToolSolver
+from jsplab.envs.environment_loader import EnvironmentLoader
+from jsplab.agents.heuristic.heuristic_agent import HeuristicSelectionAgent
+# from jsplab.utils.evaluations import EvaluationHandler
+# from jsplab.utils.logger import Logger
+from jsplab.utils.file_handler.data_handler import DataHandler
+from jsplab.utils.file_handler.model_handler import ModelHandler
+from jsplab.core import Task
+from jsplab.agents.train_test_utility_functions import get_agent_class_from_config, load_config, load_data
+from jsplab.agents.solver.epsp_solver import OrToolSolver
 
 # constants
 TEST_HEURISTICS: List[str] = ['rand', 'EDD', 'SPT', 'MTR', 'LTR']
@@ -60,7 +60,7 @@ def get_action(env, model, heuristic_id: str, heuristic_agent: Union[HeuristicSe
     return selected_action, action_mode
 
 
-def run_episode(env, model, heuristic_id: Union[str, None], handler: EvaluationHandler) -> None:
+def run_episode(env, model, heuristic_id: Union[str, None]) -> None: #, handler: EvaluationHandler
     """
     This function executes one testing episode
 
@@ -82,17 +82,17 @@ def run_episode(env, model, heuristic_id: Union[str, None], handler: EvaluationH
     while not done:
         steps += 1
         action, action_mode = get_action(env, model, heuristic_id, heuristic_agent)
-
+        
         b = env.step(action, action_mode=action_mode)
         total_reward += b[1]
         done = b[2]
 
     # store episode in object
-    mean_reward = total_reward / steps
-    handler.record_environment_episode(env, mean_reward)
+    #mean_reward = total_reward / steps
+    #handler.record_environment_episode(env, mean_reward)
 
 
-def test_solver(config: Dict, data_test: List[List[Task]], logger: Logger) -> Dict:
+def test_solver(config: Dict, data_test: List[List[Task]], logger=None) -> Dict:
     """
     This function uses the OR solver to schedule the instances given in data_test.
 
@@ -102,7 +102,7 @@ def test_solver(config: Dict, data_test: List[List[Task]], logger: Logger) -> Di
     :return: Evaluation metrics
 
     """
-    eval_handler = EvaluationHandler()
+    #eval_handler = EvaluationHandler()
 
     # for each test instance
     for instance in tqdm(data_test, desc='Computing solver solution if necessary'):
@@ -121,43 +121,43 @@ def test_solver(config: Dict, data_test: List[List[Task]], logger: Logger) -> Di
         # create environment and assign the solved_instance as tasks. Necessary to use the env for evaluation
         env, _ = EnvironmentLoader.load(config, data=data_test)
         env.tasks = solved_instance
-        eval_handler.update_episode_solved_with_solver(env)
-        log_results(plot_logger=logger, inter_test_idx=None, heuristic='solver', env=env, handler=eval_handler)
+    #     eval_handler.update_episode_solved_with_solver(env)
+    #     log_results(plot_logger=logger, inter_test_idx=None, heuristic='solver', env=env, handler=eval_handler)
 
-    return eval_handler.evaluate_test()
-
-
-def log_results(plot_logger: Logger, inter_test_idx: Union[int, None], heuristic: str,
-                env, handler: EvaluationHandler) -> None:
-    """
-    Calls the logger object to save the test results from this episode as table (e.g. makespan mean, gantt chart)
-
-    :param plot_logger: Logger object
-    :param inter_test_idx: Index of current test. Can be None
-    :param heuristic: Heuristic identifier. Can be None
-    :param env: Environment object
-    :param handler: EvaluationHandler object
-
-    :return: None
-
-    """
-
-    # get recent measures for the table
-    measures = {'total_reward': handler.rewards[-1], 'makespan': handler.makespan[-1],
-                'tardiness': handler.tardiness[-1]}
-
-    gantt_chart = env.render(mode="image")
-    # Log chart as table
-    if heuristic:
-        plot_logger.add_row_to_wandb_table(heuristic, gantt_chart, **measures)
-    else:
-        if inter_test_idx is None:
-            plot_logger.add_row_to_wandb_table("RL-Agent", gantt_chart, **measures)
-        else:
-            plot_logger.add_row_to_wandb_table(f"RL-Agent {inter_test_idx}", gantt_chart, **measures)
+    # return eval_handler.evaluate_test()
 
 
-def test_model(env_config: Dict, data: List[List[Task]], logger: Logger, plot: bool = None, log_episode: bool = None,
+# def log_results(plot_logger: Logger, inter_test_idx: Union[int, None], heuristic: str,
+#                 env, handler: EvaluationHandler) -> None:
+#     """
+#     Calls the logger object to save the test results from this episode as table (e.g. makespan mean, gantt chart)
+
+#     :param plot_logger: Logger object
+#     :param inter_test_idx: Index of current test. Can be None
+#     :param heuristic: Heuristic identifier. Can be None
+#     :param env: Environment object
+#     :param handler: EvaluationHandler object
+
+#     :return: None
+
+#     """
+
+#     # get recent measures for the table
+#     measures = {'total_reward': handler.rewards[-1], 'makespan': handler.makespan[-1],
+#                 'tardiness': handler.tardiness[-1]}
+
+#     gantt_chart = env.render(mode="image")
+#     # Log chart as table
+#     if heuristic:
+#         plot_logger.add_row_to_wandb_table(heuristic, gantt_chart, **measures)
+#     else:
+#         if inter_test_idx is None:
+#             plot_logger.add_row_to_wandb_table("RL-Agent", gantt_chart, **measures)
+#         else:
+#             plot_logger.add_row_to_wandb_table(f"RL-Agent {inter_test_idx}", gantt_chart, **measures)
+
+
+def test_model(env_config: Dict, data: List[List[Task]], logger=None, plot: bool = None, log_episode: bool = None,
                model=None, heuristic_id: str = None, intermediate_test_idx=None) -> dict:
     """
     This function tests a model in the passed environment for all problem instances passed as data_test and returns an
@@ -177,7 +177,7 @@ def test_model(env_config: Dict, data: List[List[Task]], logger: Logger, plot: b
     """
 
     # create evaluation handler
-    evaluation_handler = EvaluationHandler()
+    #evaluation_handler = EvaluationHandler()
 
     for test_i in range(len(data)):
 
@@ -186,21 +186,21 @@ def test_model(env_config: Dict, data: List[List[Task]], logger: Logger, plot: b
         environment.runs = test_i
 
         # run environment episode
-        run_episode(environment, model, heuristic_id, evaluation_handler)
+        run_episode(environment, model, heuristic_id,None )#evaluation_handler
 
         # log results. Creating wandb table
-        if log_episode:
-            log_results(logger, intermediate_test_idx, heuristic_id, environment, evaluation_handler)
+        # if log_episode:
+        #     log_results(logger, intermediate_test_idx, heuristic_id, environment, evaluation_handler)
 
         # plot results
-        if plot:
-            environment.render()
+        # if plot:
+        #     environment.render()
 
     # return episode results, using EvaluationHandler properties and function
     return evaluation_handler.evaluate_test()
 
 
-def test_model_and_heuristic(config: dict, model, data_test: List[List[Task]], logger: Logger,
+def test_model_and_heuristic(config: dict, model, data_test: List[List[Task]], logger=None,
                              plot_ganttchart: bool = False, log_episode: bool = False) -> dict:
     """
     Test model and agent_heuristics len(data) times and returns results
@@ -231,12 +231,12 @@ def test_model_and_heuristic(config: dict, model, data_test: List[List[Task]], l
         results.update({heuristic: res})
 
     # test solver and calculate optimality gap
-    res = test_solver(config, data_test, logger)
-    results.update({'solver': res})
+    # res = test_solver(config, data_test, logger)
+    # results.update({'solver': res})
 
-    results = EvaluationHandler.add_solver_gap_to_results(results)
+    # results = EvaluationHandler.add_solver_gap_to_results(results)
 
-    return results
+    # return results
 
 
 def get_perser_args():

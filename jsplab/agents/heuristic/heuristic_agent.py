@@ -40,7 +40,7 @@ Add a heuristic that returns zeros (this is not a practical example!)
 import numpy as np
 from typing import List
 
-from src.data_generator.task import Task
+from jsplab.core import Task
 
 
 def get_active_task_dict(tasks: List[Task]) -> dict:
@@ -184,7 +184,6 @@ def random_task(tasks: List[Task], action_mask: np.array) -> int:
     """
 
     chosen_job = None
-    print(action_mask)
     if np.sum(action_mask) == 1:
         chosen_job = np.argmax(action_mask)
     else:

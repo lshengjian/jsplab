@@ -13,9 +13,9 @@ OpTime = namedtuple("OpTime", "machine duration")
 class Task:
 
     def __init__(self, job_index: int, task_index: int, machine_times: List[int] = None,
-                 tools: List[int] = None, deadline: int = None, instance_hash: int = None, done: bool = None,
+                 tools: List[int] = [], deadline: int = 0, instance_hash: int = None, done: bool = False,
                  runtime: int = None, started: int = None, finished: int = None, selected_machine: int = None,
-                 _n_machines: int = None, _n_tools: int = None, _feasible_machine_from_instance_init: int = None,
+                 _n_machines: int = None, _n_tools: int = 0, _feasible_machine_from_instance_init: int = None,
                  _feasible_order_index_from_instance_init: int = None):
 
         # test for correct data type of required and throw type error otherwise

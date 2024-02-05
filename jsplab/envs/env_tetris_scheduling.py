@@ -8,16 +8,14 @@ from gymnasium import spaces
 import numpy as np
 import copy
 from jsplab.core.task import Task
-#from src.visuals_generator.gantt_chart import GanttChartPlotter
 from typing import List, Tuple, Dict, Any, Union
 
 REWARD_BUFFER_SIZE = 250
 
-
 class Env(gym.Env):
     """
     Environment for scheduling optimization.
-    This class inherits from the base gym environment, so the functions step, reset, _state_obs and render
+    This class inherits from the base gym environment, so the functions step, reset, and render
     are implemented and can be used by default.
 
     If you want to customize the given rewards, you can adapt the function compute_reward.
@@ -28,19 +26,14 @@ class Env(gym.Env):
     """
 
     def __init__(self, config: dict, data: List[List[Task]],render_mode=None):
-        
-        #super().__init__()
         self.render_mode = render_mode
-
-
         # import data containing all instances
         self.data: List[List[Task]] = data  # is later shuffled before input into the environment
 
         # get number of jobs, tasks, tools, machines and runtimes from input data
         self.num_jobs, self.num_tasks, self.max_runtime, self.max_deadline = self.get_instance_info()
-        self.num_machines: int = copy.copy(self.data[0][0]._n_machines)
-        self.num_tools: int = copy.copy(self.data[0][0]._n_tools)
-        self.num_all_tasks: int = self.num_jobs * self.num_tasks
+        self.num_machines: int = len(self.data[0][0].machines)
+        self.num_all_tasks: int = len(data[0])#self.num_jobs * self.num_tasks
         self.num_steps_max: int = config.get('num_steps_max', self.num_all_tasks)
         self.max_task_index: int = self.num_tasks - 1
         self.max_job_index: int = self.num_jobs - 1
@@ -52,9 +45,10 @@ class Env(gym.Env):
         # initialize info which is reset by the reset-method after every episode
         self.num_steps: int = 0
         self.makespan: int = 0
-        self.tardiness: numpy.ndarray = np.zeros(self.num_all_tasks, dtype=int)
+        #self.tardiness: numpy.ndarray = np.zeros(self.num_all_tasks, dtype=int)
         self.ends_of_machine_occupancies: numpy.ndarray = np.zeros(self.num_machines, dtype=int)
-        self.tool_occupancies: List[List] = [[] for _ in range(self.num_tools)]  # stores tool use intervals
+
+        #self.tool_occupancies: List[List] = [[] for _ in range(self.num_tools)]  # stores tool use intervals
         self.job_task_state: numpy.ndarray = np.zeros(self.num_jobs, dtype=int)
         self.task_job_mapping: dict = {}
 
@@ -73,16 +67,13 @@ class Env(gym.Env):
         self.episodes_makespans: List = []
         self.episodes_tardinesses: List = []
 
-        # logging info buffers. Are reset in self.log_intermediate_step
-        self.logging_makespans: List = []
-        self.logging_rewards: List = []
-        self.logging_tardinesses: List = []
+
 
         # action_space: idx_job
         self.action_space: spaces.Discrete = spaces.Discrete(self.num_jobs)
 
         # initial observation
-        self._state_obs: List = self.reset()
+        self._state_obs: List = self.reset()[0]
 
         # observation space
         observation_shape = np.array(self.state_obs).shape
@@ -108,10 +99,11 @@ class Env(gym.Env):
 
         # reset episode counters and infos
         self.num_steps = 0
-        self.tardiness = np.zeros(self.num_all_tasks, dtype=int)
+        #self.tardiness = np.zeros(self.num_all_tasks, dtype=int)
         self.makespan = 0
         self.ends_of_machine_occupancies = np.zeros(self.num_machines, dtype=int)
-        self.tool_occupancies = [[] for _ in range(self.num_tools)]
+
+        #self.tool_occupancies = [[] for _ in range(self.num_tools)]
         self.job_task_state = np.zeros(self.num_jobs, dtype=int)
         self.action_history = []
         self.executed_job_history = []
@@ -119,13 +111,15 @@ class Env(gym.Env):
 
         # clear episode rewards after all training data has passed once. Stores info across runs.
         if self.data_idx == 0:
-            self.episodes_makespans, self.episodes_rewards, self.episodes_tardinesses = ([], [], [])
+            self.episodes_makespans, self.episodes_rewards = ([], []) #, self.episodes_tardinesses
 
         # load new instance every run
         self.data_idx = self.runs % len(self.data)
         self.tasks = copy.deepcopy(self.data[self.data_idx])
         if self.shuffle:
             np.random.shuffle(self.tasks)
+        # for t in self.tasks:
+        #     print(t)
         self.task_job_mapping = {(task.job_index, task.task_index): i for i, task in enumerate(self.tasks)}
 
         # retrieve maximum deadline of the current instance
@@ -134,8 +128,8 @@ class Env(gym.Env):
 
         return self.state_obs,{}
 
-    def step(self, action: Union[int, float]) -> (List[float], Any, bool,bool, Dict):
-        """ #, **kwargs
+    def step(self, action: Union[int, float], **kwargs) -> (List[float], Any, bool,bool, Dict):
+        """
         Step Function
         :param action: Action to be performed on the current state of the environment
         :return: Observation, reward, done, infos
@@ -148,11 +142,9 @@ class Env(gym.Env):
         if self.check_valid_job_action(selected_job_vector, self.last_mask):
             # if the action is valid/executable/schedulable
             selected_task_id, selected_task = self.get_selected_task(action)
+            #print(f'selected_task:{selected_task}')
             selected_machine = self.choose_machine(selected_task)
             self.execute_action(action, selected_task, selected_machine)
-        else:
-            # if the action is not valid/executable/scheduable
-            pass
 
         # update variables and track reward
         action_mask = self.get_action_mask()
@@ -163,19 +155,13 @@ class Env(gym.Env):
 
         done = self.check_done()
         if done:
-            episode_reward_sum = np.sum(self.reward_history)
-            makespan = self.get_makespan()
-            tardiness = self.calculate_tardiness()
 
-            self.episodes_makespans.append(self.get_makespan())
+            makespan = self.get_makespan()
+            #tardiness = self.calculate_tardiness()
+
+            self.episodes_makespans.append(makespan)
             self.episodes_rewards.append(np.mean(self.reward_history))
 
-            self.logging_rewards.append(episode_reward_sum)
-            self.logging_makespans.append(makespan)
-            self.logging_tardinesses.append(tardiness)
-
-            if self.runs % self.log_interval == 0:
-                self.log_intermediate_step()
 
         self.num_steps += 1
         return observation, reward, done,False, infos
@@ -187,10 +173,14 @@ class Env(gym.Env):
         """
         num_jobs, num_tasks, max_runtime, max_deadline = 0, 0, 0, 0
         for task in self.data[0]:
-            num_jobs = task.job_index if task.job_index > num_jobs else num_jobs
-            num_tasks = task.task_index if task.task_index > num_tasks else num_tasks
-            max_runtime = task.runtime if task.runtime > max_runtime else max_runtime
-            max_deadline = task.deadline if task.deadline > max_deadline else max_deadline
+            if task.job_index>num_jobs:
+                num_jobs=task.job_index
+            if task.task_index>num_tasks:
+                num_tasks=task.task_index
+            if task.runtime!=None and task.runtime>max_runtime:
+                max_runtime=task.runtime
+            if task.deadline!=None and task.deadline>max_deadline:
+                max_deadline=task.deadline
         return num_jobs + 1, num_tasks + 1, max_runtime, max_deadline
 
     @property
@@ -313,44 +303,15 @@ class Env(gym.Env):
             preceding_task = self.tasks[self.task_job_mapping[(job_id, task.task_index - 1)]]
             start_time_of_preceding_task = preceding_task.finished
 
-        # check earliest possible time to schedule according to preceding task and needed machine
+
         start_time = max(start_time_of_preceding_task, self.ends_of_machine_occupancies[machine_id])
 
-        # if the task needs tools, these need to be taken into account, too
-        if self.num_tools != 0:
-            # only searches within the ends of machine occupancies
-            search_min = min(self.ends_of_machine_occupancies)
-            search_max = max(self.ends_of_machine_occupancies)
-
-            # create numpy arrays of open windows with respect to tools
-            occupied_matrix = np.zeros((len(self.tool_occupancies), search_max))
-            for tool, tool_intervals in enumerate(self.tool_occupancies):
-                for interval in tool_intervals:
-                    occupied_matrix[tool, interval[0]:interval[1]] = 1
-
-            # get a representation of where open slots are for the needed tools
-            tool_occupation = np.sum(occupied_matrix[np.array(task.tools, dtype=bool), :], axis=0).astype('int')
-            possible_start_times = []
-            for time in np.arange(search_min, search_max):
-                if all(tool_occupation[int(time):int(time + task.runtime)] == 0):
-                    if time >= start_time:
-                        possible_start_times.append(int(time))
-            if len(possible_start_times) == 0:
-                if sum(tool_occupation) > 0:
-                    possible_start_times.append(np.max(np.argwhere(tool_occupation == 1)) + 1)
-                else:
-                    possible_start_times.append(0)
-            min_possible_start_time = min(possible_start_times)
-            if min_possible_start_time > start_time:
-                start_time = min_possible_start_time
 
         end_time = start_time + task.runtime
 
         # update machine occupancy and job_task_state
         self.ends_of_machine_occupancies[machine_id] = end_time
         self.job_task_state[job_id] += 1
-        for needed_tool in np.argwhere(task.tools):
-            self.tool_occupancies[int(needed_tool[0])].append([start_time, end_time])
 
         # update job and task
         task.started = start_time
@@ -426,9 +387,9 @@ class Env(gym.Env):
             if len(self.mr2_reward_buffer[self.data_idx]) > REWARD_BUFFER_SIZE:  # pop from left side to update buffer
                 self.mr2_reward_buffer[self.data_idx].pop(0)
 
-            if self.runs > 100:
-                # TODO What is this?
-                print('stop')
+            # if self.runs > 100:
+            #     # TODO What is this?
+            #     print('stop')
 
         return reward
 
@@ -442,51 +403,12 @@ class Env(gym.Env):
         sum_done = sum([task.done for task in self.tasks])
         return sum_done == self.num_all_tasks or self.num_steps == self.num_steps_max
 
-    def calculate_tardiness(self) -> int:
-        """
-        Calculates the tardiness of all jobs
-        (this is the previous was the calc reward function)
-
-        :return: (int) tardiness of last solution
-
-        """
-        for i, task in enumerate(self.tasks):
-            # if task has not the highest index -> continue
-
-            if task.task_index == self.max_task_index:
-                # if job=last task of the job done, punish possible completion
-                # after deadline -> 0 if done before deadline
-                if task.done == 1:
-                    t_tardiness = int(np.maximum(0, task.finished - task.deadline))
-                    self.tardiness[i] = t_tardiness
-                # if job not done yet, punish with max tardiness punishment
-                else:
-                    t_tardiness = int(np.maximum(0, self.num_steps_max - task.deadline))
-                    self.tardiness[i] = t_tardiness
-
-        return t_tardiness
-
     def get_makespan(self):
         """
         Returns the current makespan (the time the latest of all scheduled tasks finishes)
         """
         return np.max(self.ends_of_machine_occupancies)
 
-    def log_intermediate_step(self) -> None:
-        """
-        Log Function
-
-        :return: None
-
-        """
-        if self.runs >= self.log_interval:
-            print('-' * 110, f'\n{self.runs} instances played! Last instance seen: {self.data_idx}/{len(self.data)}')
-            print(f'Average performance since last log: mean reward={np.around(np.mean(self.logging_rewards), 2)}, ' \
-                     f'mean makespan={np.around(np.mean(self.logging_makespans), 2)}, ' \
-                     f'mean tardiness={np.around(np.mean(self.logging_tardinesses), 2)}')
-            self.logging_rewards.clear()
-            self.logging_makespans.clear()
-            self.logging_tardinesses.clear()
 
     def close(self):
         """
@@ -494,12 +416,6 @@ class Env(gym.Env):
         """
         pass
 
-    # def seed(self, seed=1):
-    #     """
-    #     This is a relict of using OpenAI Gym API.
-    #     Currently unnecessary, because the environment is deterministic -> no seed is used.
-    #     """
-    #     return seed
 
     def render(self):
         """ #, mode='human'

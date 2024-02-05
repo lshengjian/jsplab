@@ -75,6 +75,7 @@ def compute_initial_instance_solution(instances: List[List[Task]], config: dict)
 
     # split instances for multiprocessing
     features_dataset = np.array_split(instances, num_processes)
+    #print(len(features_dataset))
 
     for process_id in tqdm.tqdm(range(num_processes), desc="Compute deadlines"):
         args = (features_dataset[process_id], instance_list, make_span_list, config)
@@ -84,6 +85,8 @@ def compute_initial_instance_solution(instances: List[List[Task]], config: dict)
 
     for p in processes:
         p.join()
+    # print(instance_list)
+    # print(make_span_list)
     return list(instance_list)
 
 
@@ -115,6 +118,7 @@ def generate_deadlines(instances: List[List[Task]], instance_with_dead_lines: Li
         while not done:
             tasks = env.tasks
             task_mask = env.get_action_mask()
+            print(task_mask)
 
             action = heuristic_agent(tasks, task_mask, DEADLINE_HEURISTIC)
             b = env.step(action)
@@ -126,6 +130,7 @@ def generate_deadlines(instances: List[List[Task]], instance_with_dead_lines: Li
 
         # start_times = env.scheduling
         make_span.append(env.get_makespan())
+        print(make_span)
         # actions.sort()
         for task_j, task in enumerate(tasks):
             task.deadline = task.finished

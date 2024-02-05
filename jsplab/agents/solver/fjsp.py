@@ -116,7 +116,16 @@ def solve_fjsp(info:InstanceInfo):
         print("Optimal objective value: %i" % solver.ObjectiveValue())
         data=get_assigned(jobs,all_tasks,solver,machine_usages)
         view_solution(all_machines,data)
+        actions,tasks=[],[]
+
+        for d in  data.values():
+            tasks.extend(d)
+        d.sort(key=lambda x:x.start)
+        actions=map(lambda x:x.job,tasks)
+        return solver.ObjectiveValue(),list(actions)
+        #print(list(actions))
     else:
         print("Not found solution!")
+    return 99999,[]
         
 

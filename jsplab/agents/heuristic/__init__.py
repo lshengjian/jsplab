@@ -1,1 +1,1 @@
-from src.agents.heuristic.heuristic_agent import *
+from .heuristic_agent import *
