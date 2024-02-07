@@ -1,4 +1,4 @@
-import collections
+import numpy as np
 from ortools.sat.python import cp_model
 
 from .util import *
@@ -12,7 +12,7 @@ def solve_fjsp(info:InstanceInfo):
 
     jobs=convert2fjsp_data(info.jobs)
     num_jobs = len(jobs)
-    all_jobs = range(num_jobs)
+    #all_jobs = range(num_jobs)
     machines_count = 1 + max(op_time.machine for job in jobs for task in job for op_time in task)
     all_machines = range(machines_count)
 
@@ -32,7 +32,7 @@ def solve_fjsp(info:InstanceInfo):
     # Creates job intervals and add to the corresponding machine lists.
     all_tasks = {}
     machine_usages = {}  # indexed by (job_id, task_id, machine_id)
-    machine_to_intervals = collections.defaultdict(list)
+    machine_to_intervals = defaultdict(list)
     for job_id, job in enumerate(jobs):
         for task_id, task in enumerate(job):
             min_duration = task[0].duration
@@ -120,8 +120,11 @@ def solve_fjsp(info:InstanceInfo):
 
         for d in  data.values():
             tasks.extend(d)
-        d.sort(key=lambda x:x.start)
-        actions=map(lambda x:x.job,tasks)
+        tasks.sort(key=lambda x:x.start)
+        actions=list(map(lambda x:x.job*100+x.machine,tasks))
+        #print(list(np.array(actions)+1))
+        # for t in tasks:
+        #     print(t)
         return solver.ObjectiveValue(),list(actions)
         #print(list(actions))
     else:

@@ -3,7 +3,6 @@ This file provides the scheduling environment class Env,
 which can be used to load and simulate scheduling-problem instances.
 """
 import gymnasium as gym
-import numpy
 from gymnasium import spaces
 import numpy as np
 import copy

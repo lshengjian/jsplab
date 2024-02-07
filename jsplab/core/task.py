@@ -4,19 +4,17 @@ from typing import List,Dict
 import numpy as np
 from collections import defaultdict,namedtuple
 
-__all__=[ 'defaultdict','namedtuple', 'OpTime','Task', \
-          'convert2jsp_data','convert2fjsp_data'
-         ]
+__all__=[ 'defaultdict','namedtuple', 'OpTime','Task' ]
 
 OpTime = namedtuple("OpTime", "machine duration")
 # Point = namedtuple('Point', ['x', 'y'], defaults=(0.0, 0.0))
 class Task:
 
-    def __init__(self, job_index: int, task_index: int, machine_times: List[int] = None,
-                 tools: List[int] = [], deadline: int = 0, instance_hash: int = None, done: bool = False,
-                 runtime: int = None, started: int = None, finished: int = None, selected_machine: int = None,
-                 _n_machines: int = None, _n_tools: int = 0, _feasible_machine_from_instance_init: int = None,
-                 _feasible_order_index_from_instance_init: int = None):
+    def __init__(self, job_index: int, task_index: int,
+                 machine_times: List[int] = None,
+                 deadline: int = 0, done: bool = False,
+                 runtime: int = 0, started: int = 0, finished: int = 0, selected_machine: int = 0,
+                 ):
 
         # test for correct data type of required and throw type error otherwise
         if not isinstance(job_index, int) or not isinstance(task_index, int):
@@ -31,23 +29,22 @@ class Task:
         self._machines = [] # like (1,0,1) 说明机器1和3能用
         self._runtimes = []
         self.machines = machine_times 
-        self.tools = tools       #可用工具集合
+        #self.tools = tools       #可用工具集合
         self.deadline = deadline
-        self.instance_hash = instance_hash
+        #self.instance_hash = instance_hash
 
         # public - non-static - optional
         self.done = done
-        if runtime!=None:
-            self.runtime = runtime
+        self.runtime = runtime
         self.started = started
         self.finished = finished
         self.selected_machine = selected_machine
 
         # protected - optional
-        self._n_machines = _n_machines
-        self._n_tools = _n_tools
-        self._feasible_machine_from_instance_init = _feasible_machine_from_instance_init
-        self._feasible_order_index_from_instance_init = _feasible_order_index_from_instance_init
+        # self._n_machines = _n_machines
+        # self._n_tools = _n_tools
+        # self._feasible_machine_from_instance_init = _feasible_machine_from_instance_init
+        # self._feasible_order_index_from_instance_init = _feasible_order_index_from_instance_init
 
     @property 
     def machines(self):
@@ -63,7 +60,7 @@ class Task:
         self.runtime=max(times)
 
     def __str__(self) -> str:
-        return f"J{self.job_index+1}-{self.task_index+1}|{self.runtime}"
+        return f"J{self.job_index+1}-{self.task_index+1}|{self._runtimes}"
 
     def str_info(self) -> str:
         m_idxs=np.nonzero(self._runtimes)[0]
@@ -74,46 +71,3 @@ class Task:
         data=str(list(zip(ms,ts))).replace(' ','')
         return f"J{self.job_index+1}-{self.task_index+1}|{self.runtime:.0f},{data}"
     
-
-def convert2jsp_data(instance:List[Task])->List[List[OpTime]]:
-    """Convert instance to or-tools minimal jobshop problem format.
-    jobs_data = [  # task = (machine_id, processing_time).
-        [(0, 3), (1, 2), (2, 2)],  # Job0
-        [(0, 2), (2, 1), (1, 4)],  # Job1
-        [(1, 4), (2, 3)],  # Job2
-    ]
-    """
-    jobs_data:Dict[int,List[OpTime]]=defaultdict(list)
-    for task in instance:
-        times=task._runtimes
-        m_idx=np.nonzero(times)[0][0]
-        jobs_data[task.job_index].append(OpTime(m_idx,times[m_idx]))
-    return list(jobs_data.values())
-
-def convert2fjsp_data(instance:List[Task])->List[List[List[OpTime]]]:
-    """Convert instance to or-tools flex jobshop problem format.
-    jobs = [  # task = (machine_id,processing_time )
-        [  # Job 0
-            [(0,3), (1,1), (2,5)], # task 0 with 3 alternatives
-            [(2,0), (1,4), (2,6)],  # task 1 with 3 alternatives
-         ],
-        [  # Job 1
-            [(0,2), (1,3), (2,4)]
-        ]
-    ]
-    """
-
-    job_data=defaultdict(list)
-    task_data=defaultdict(list)
-
-    for task in instance:
-        times=task._runtimes
-        m_idxs=np.nonzero(times)[0]
-        
-        for idx in m_idxs:
-            task_data[task.job_index,task.task_index].append(OpTime(idx,times[idx]))
-   
-    for j_idx,t_idx  in  task_data.keys():
-        job_data[j_idx].append(task_data[j_idx,t_idx])
-
-    return list(job_data.values())

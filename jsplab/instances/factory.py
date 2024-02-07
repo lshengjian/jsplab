@@ -13,7 +13,7 @@ import numpy as np
 # Functional internal import
 from ..core.task import Task
 
-from ..core.common import *
+from ..core.defines import *
 
 
 class JobShopFactory:

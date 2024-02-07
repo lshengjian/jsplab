@@ -69,7 +69,8 @@ class ParserExcel(IParse):
             task_idx=task_idxs[job_idx]
             task_idxs[job_idx]+=1
             ms=row[1:] 
-            task=Task(job_idx,task_idx,machine_times=ms)
+            idx=np.argmax(ms)
+            task=Task(job_idx,task_idx,runtime=ms[idx],machine_times=ms)
             jobs.append(task)
         first_agv_idx=None if len(agv_idxs)==0 else min(agv_idxs)
         return InstanceInfo(name,jobs,offsets,first_agv_idx)

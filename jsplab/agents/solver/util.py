@@ -4,7 +4,7 @@ MAX_SEARCH_TIME_IN_SECONDS=20
 
 task_type = namedtuple("task_type", "start end interval machine")
 assigned_task_type = namedtuple(
-    "assigned_task_type", "start job index duration"
+    "assigned_task_type", "start job index duration machine"
 )
 class SolutionPrinter(cp_model.CpSolverSolutionCallback):
     """Print intermediate solutions."""
@@ -41,7 +41,8 @@ def get_assigned(jobs,all_tasks,solver,presences):
                     start=task_start,
                     job=job_id,
                     index=task_id,
-                    duration=task_end-task_start)
+                    duration=task_end-task_start,
+                    machine=machine)
             )
     return assigned_jobs
 

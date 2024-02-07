@@ -1,6 +1,6 @@
 from typing import  Generic,Callable,  Optional, List,TypeVar
 from rich.text import Text
-from ..core.common import *
+from ..core.defines import *
 T = TypeVar('T')
 class Node(Generic[T]):
     def __init__(self, data: T):
