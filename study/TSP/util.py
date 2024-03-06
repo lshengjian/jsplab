@@ -1,11 +1,11 @@
 import numpy as np
 from numpy.typing import NDArray
-from typing import Tuple
+from typing import Tuple,List
 import matplotlib.pyplot as plt
 
 __all__=['show','make_random_data','make_demo_data']
 
-def get_distance_matrix(coords):
+def get_distance_matrix(coords:NDArray):
     '''
     # N=len(pos)
     # rt=np.ones((N,N),dtype=float)*1e10
@@ -43,7 +43,7 @@ def make_demo_data():
     dis_matrix=get_distance_matrix(city_coords)
     return city_coords,dis_matrix
 
-def show(city_coordinates,route,cities):
+def show(city_coordinates:NDArray,route:List[int],cities:List[str]):
     plt.figure(figsize=(6, 6))
     plt.scatter(city_coordinates[:, 0], city_coordinates[:, 1], color='blue', s=100, marker='o')
     # 绘制访问路径
@@ -77,7 +77,12 @@ def demo_cities(is_random:bool=True):
     citie_names=list(map(lambda x:str(x+1),route))
     show(pos,route,citie_names)
 
+'''
+运行前先安装依赖库：
+pip install numpy
+pip install matplotlib
 
+'''
 
 if __name__ == "__main__":
     
