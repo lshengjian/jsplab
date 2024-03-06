@@ -34,20 +34,6 @@ def fitness(tour:List,costs:NDArray):
     return total
 
 
-def get_distance_matrix(pos:NDArray)->NDArray:  
-    # N=len(pos)
-    # rt=np.ones((N,N),dtype=float)*1e10
-    # for i in range(N):
-    #     temp=pos-pos[i]
-    #     temp=temp**2
-    #     temp=np.sqrt(temp.sum(axis=1))
-    #     idxs=temp>0.1
-    #     rt[i][idxs]=temp[idxs]
-    rt=np.sqrt(
-        ((pos[:, :, None] - pos[:, :, None].T) ** 2).sum(axis=1)
-    )
-    rt[rt<1e-10]=1e10
-    return rt
             
 def make_random_data(N=5,low=-10,high=10)->Tuple[NDArray,NDArray]:
     '''
@@ -66,30 +52,13 @@ def test_make_data(N=6):
     print(pos)
     print(dis)
 
-def show(city_coordinates,route,cities):
-    plt.figure(figsize=(6, 6))
-    plt.scatter(city_coordinates[:, 0], city_coordinates[:, 1], color='blue', s=100, marker='o')
-    # 绘制访问路径
-    for i in range(len(route) - 1):
-        plt.plot([city_coordinates[route[i], 0], city_coordinates[route[i + 1], 0]],
-                [city_coordinates[route[i], 1], city_coordinates[route[i + 1], 1]], color='red', linestyle='-', linewidth=2)
 
-    # 连接最后一个城市和起始城市
-    plt.plot([city_coordinates[route[-1], 0], city_coordinates[route[0], 0]],
-            [city_coordinates[route[-1], 1], city_coordinates[route[0], 1]], color='red', linestyle='-', linewidth=2)
-    # 添加城市名称
-    for i, city in enumerate(cities):
-        plt.text(city_coordinates[i, 0], city_coordinates[i, 1]+0.3, city, fontsize=12, ha='center', va='bottom')
-    plt.show()
 
 
 
 def main():
-    N=30
-    pos,dis=make_random_data(N)
-    route=list(range(N))
-    cities=list(map(str,route))
-    show(pos,route,cities)
+    pass
+
     # dis=fitness([1,2,3],DemoData)
     # assert abs(dis-930.)<1e-5
     # numbers = list(range(1, 4))
