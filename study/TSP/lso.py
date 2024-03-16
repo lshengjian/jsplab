@@ -37,8 +37,15 @@ def main():
 
     for t in range(10000):
         birds_pos=(birds_pos+birds_best_pos)/2+np.random.randn(num_birds,num_city)
+        for i,idx in enumerate(idxs):
+            if i==0:
+                birds_pos[idx]=best_pos+np.random.randn(num_city)*0.1
+            elif i<4:
+                birds_pos[idx]=(birds_pos[idx]+birds_best_pos[idx])/2+np.random.randn(num_city)*1.618
+
         birds_cost=np.apply_along_axis(cost_fn, axis=1, arr=birds_pos, distance_matrix=distance_matrix)
-        idxs=get_good_indexs(birds_cost)
+        if t%10==9:
+            idxs=get_good_indexs(birds_cost)
 
         idxs2= birds_cost<birds_best_cost
         birds_best_pos[idxs2,:]=birds_pos[idxs2,:]

@@ -80,7 +80,7 @@ def make_demo_data():
 
 def show(city_coordinates:NDArray,route:List[int],cities:List[str]):
     plt.figure(figsize=(6, 6))
-    plt.scatter(city_coordinates[:, 0], city_coordinates[:, 1], color='blue', s=100, marker='o')
+    plt.scatter(city_coordinates[:, 0], city_coordinates[:, 1], color='blue', s=60, marker='o')
     # 绘制访问路径
     for i in range(len(route) - 1):
         plt.plot([city_coordinates[route[i], 0], city_coordinates[route[i + 1], 0]],
