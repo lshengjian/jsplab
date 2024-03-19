@@ -16,8 +16,7 @@ def demo_cost():
 
 def cost_fn(pos, distance_matrix):
     return cost(get_tour_from_pos(pos),distance_matrix)
-def get_good_indexs(costs:NDArray):
-    return np.argsort(costs)
+
 
 def main():
     num_birds=30
@@ -27,7 +26,7 @@ def main():
 
     birds_pos=np.random.randn(num_birds,num_city)
     birds_cost=np.apply_along_axis(cost_fn, axis=1, arr=birds_pos, distance_matrix=distance_matrix)
-    idxs=get_good_indexs(birds_cost)
+    idxs=np.argsort(birds_cost)
     birds_best_pos=birds_pos.copy()
     birds_best_cost= birds_cost.copy()
 
@@ -36,9 +35,9 @@ def main():
     print(f"init cost:{best_cost}")
 
     for t in range(10000):
-        birds_pos=(birds_pos+birds_best_pos)/2+np.random.randn(num_birds,num_city)
+        birds_pos=(birds_pos+birds_best_pos)/2+np.random.randn(num_birds,num_city)*0.2
         birds_cost=np.apply_along_axis(cost_fn, axis=1, arr=birds_pos, distance_matrix=distance_matrix)
-        idxs=get_good_indexs(birds_cost)
+        idxs=np.argsort(birds_cost)
 
         idxs2= birds_cost<birds_best_cost
         birds_best_pos[idxs2,:]=birds_pos[idxs2,:]

@@ -16,48 +16,67 @@ def demo_cost():
 
 def cost_fn(pos, distance_matrix):
     return cost(get_tour_from_pos(pos),distance_matrix)
-def get_good_indexs(costs:NDArray):
-    return np.argsort(costs)
+# def get_good_indexs(costs:NDArray):
+#     return np.argsort(costs)
 
 def main():
-    num_birds=30
+    num_lions=30
     num_city=20
+    cub_start=6
 
     cities,distance_matrix=make_random_data(num_city)
 
-    birds_pos=np.random.randn(num_birds,num_city)
-    birds_cost=np.apply_along_axis(cost_fn, axis=1, arr=birds_pos, distance_matrix=distance_matrix)
-    idxs=get_good_indexs(birds_cost)
-    birds_best_pos=birds_pos.copy()
-    birds_best_cost= birds_cost.copy()
+    ps_pos=np.random.randn(num_lions,num_city)
+    ps_cost=np.apply_along_axis(cost_fn, axis=1, arr=ps_pos, distance_matrix=distance_matrix)
+    idxs=np.argsort(ps_cost)
+    ps_best_pos=ps_pos.copy()
+    ps_best_cost= ps_cost.copy()
 
-    best_pos=birds_pos[idxs[0]].copy()
-    best_cost=birds_cost[idxs[0]]
+    best_pos=ps_pos[idxs[0]].copy()
+    best_cost=ps_cost[idxs[0]]
     print(f"init cost:{best_cost}")
+    stat={'Lion':0,'Lioness':0,'lion_cub':0}
 
     for t in range(10000):
-        birds_pos=(birds_pos+birds_best_pos)/2+np.random.randn(num_birds,num_city)
+        ps_pos=(ps_pos+ps_best_pos)/2+np.random.randn(num_lions,num_city)*0.1
         for i,idx in enumerate(idxs):
             if i==0:
-                birds_pos[idx]=best_pos+np.random.randn(num_city)*0.1
-            elif i<4:
-                birds_pos[idx]=(birds_pos[idx]+birds_best_pos[idx])/2+np.random.randn(num_city)*1.618
+                ps_pos[idx]=best_pos+np.random.randn(num_city)*0.01
+            elif i<cub_start:
+                co_idx=idxs[np.random.randint(1,cub_start)]
+                ps_pos[idx]=(ps_best_pos[co_idx]+ps_pos[idx])/2+np.random.randn(num_city)*0.2
 
-        birds_cost=np.apply_along_axis(cost_fn, axis=1, arr=birds_pos, distance_matrix=distance_matrix)
-        if t%10==9:
-            idxs=get_good_indexs(birds_cost)
 
-        idxs2= birds_cost<birds_best_cost
-        birds_best_pos[idxs2,:]=birds_pos[idxs2,:]
-        birds_best_cost[idxs2]=birds_cost[idxs2]
-        if (birds_cost[idxs[0]]<best_cost):
-            best_cost=birds_cost[idxs[0]]
-            best_pos=birds_pos[idxs[0]]
-            print(f"step:{t+1} cost:{best_cost}")
+        ps_cost=np.apply_along_axis(cost_fn, axis=1, arr=ps_pos, distance_matrix=distance_matrix)
+        idxs2= ps_cost<ps_best_cost
+        ps_best_pos[idxs2,:]=ps_pos[idxs2,:]
+        ps_best_cost[idxs2]=ps_cost[idxs2]
+        min_idx=np.argmin(ps_cost)
+        if (ps_cost[min_idx]<best_cost):
+            best_cost=ps_cost[min_idx]
+            best_pos=ps_pos[min_idx]
+            
+            flag=''
+            for i,idx in enumerate(idxs):
+                if idx==min_idx:
+                    if i==0:
+                        flag='Lion'
+                    elif i>=cub_start:
+                        flag='lion_cub'
+                    else:
+                        flag='Lioness'
+                    stat[flag]+=1
+                    break
+            print(f"step:{t+1} {flag} find new best:{best_cost}")
+            idxs=np.argsort(ps_cost)
+
 
     route=get_tour_from_pos(best_pos)
     citie_names=list(map(lambda x:str(x+1),route))
+    for k,v in stat.items():
+        print(f"{k}:{v}")
     show(cities,route,citie_names) 
+
     
 
 if __name__ == "__main__":
