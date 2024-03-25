@@ -36,15 +36,23 @@ def main():
     best_cost=ps_cost[idxs[0]]
     print(f"init cost:{best_cost}")
     stat={'Lion':0,'Lioness':0,'lion_cub':0}
+    T=5000
 
-    for t in range(10000):
-        ps_pos=(ps_pos+ps_best_pos)/2+np.random.randn(num_lions,num_city)*0.1
+    for t in range(T):
+        scale=(T-t)/T
+        #ps_pos=(best_pos+ps_best_pos)/2+np.random.randn(num_lions,num_city)*0.1
         for i,idx in enumerate(idxs):
             if i==0:
-                ps_pos[idx]=best_pos+np.random.randn(num_city)*0.01
+                K=0.8
+                ps_pos[idx]=best_pos*K+ps_best_pos[idx]*(1-K)+np.random.randn(num_city)*0.1*scale
             elif i<cub_start:
                 co_idx=idxs[np.random.randint(1,cub_start)]
-                ps_pos[idx]=(ps_best_pos[co_idx]+ps_pos[idx])/2+np.random.randn(num_city)*0.2
+                ps_pos[idx]=(best_pos+ps_best_pos[co_idx]+ps_best_pos[idx])/3+np.random.randn(num_city)*scale
+            else:
+                follow_idx=idxs[i%cub_start]
+                K=0.618
+                ps_pos[idx]=ps_best_pos[follow_idx]*K+best_pos*(1-K)+np.random.randn(num_city)*scale
+                
 
 
         ps_cost=np.apply_along_axis(cost_fn, axis=1, arr=ps_pos, distance_matrix=distance_matrix)

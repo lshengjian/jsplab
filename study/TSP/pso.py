@@ -33,18 +33,22 @@ def main():
     best_pos=birds_pos[idxs[0]].copy()
     best_cost=birds_cost[idxs[0]]
     print(f"init cost:{best_cost}")
+    T=5000
 
-    for t in range(10000):
-        birds_pos=(birds_pos+birds_best_pos)/2+np.random.randn(num_birds,num_city)*0.2
+
+    for t in range(T):
+        scale=(T-t)/T
+        birds_pos=(best_pos+birds_best_pos)/2+np.random.randn(num_birds,num_city)*scale
         birds_cost=np.apply_along_axis(cost_fn, axis=1, arr=birds_pos, distance_matrix=distance_matrix)
-        idxs=np.argsort(birds_cost)
+        #idxs=np.argsort(birds_cost)
+        min_idx=np.argmin(birds_cost)
 
         idxs2= birds_cost<birds_best_cost
         birds_best_pos[idxs2,:]=birds_pos[idxs2,:]
         birds_best_cost[idxs2]=birds_cost[idxs2]
-        if (birds_cost[idxs[0]]<best_cost):
-            best_cost=birds_cost[idxs[0]]
-            best_pos=birds_pos[idxs[0]]
+        if (birds_cost[min_idx]<best_cost):
+            best_cost=birds_cost[min_idx]
+            best_pos=birds_pos[min_idx]
             print(f"step:{t+1} cost:{best_cost}")
 
     route=get_tour_from_pos(best_pos)
