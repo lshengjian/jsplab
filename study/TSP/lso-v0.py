@@ -17,6 +17,12 @@ def demo_cost():
 def cost_fn(pos, distance_matrix):
     return cost(get_tour_from_pos(pos),distance_matrix)
 
+def close_to(cur_pos:NDArray,target1:NDArray,target2:NDArray,wight1=0.5,step=1):
+    center=target1*wight1+target2*(1-wight1)
+    noise=(np.random.random()-0.5)*step
+    dv=center-cur_pos
+    return center+dv*noise
+
 
 def main():
     num_lions=30
@@ -36,25 +42,19 @@ def main():
     print(f"init cost:{best_cost}")
     stat={'Lion':0,'Lioness':0,'lion_cub':0}
     T=5000
-    
 
     for t in range(T):
         scale=(T-t)/T
         for i,idx in enumerate(idxs):
             if i==0:
-                # select_idx=np.random.randint(0,num_city)
-                # ps_pos[idx,:]=best_pos[:]
-                # ps_pos[idx,select_idx]+=(np.random.random()-0.5)*scale
-                K=0.9
-                ps_pos[idx]=best_pos*K+ps_best_pos[idx]*(1-K)+np.random.randn(num_city)*0.1*scale
+                ps_pos[idx]=close_to(ps_pos[idx],best_pos,ps_best_pos[idx],0.8,0.01)
             elif i<cub_start:
                 co_idx=idxs[np.random.randint(1,cub_start)]
-                ps_pos[idx]=(best_pos+ps_best_pos[co_idx]+ps_best_pos[idx])/3+np.random.randn(num_city)*0.2
+                ps_pos[idx]=close_to(ps_pos[idx],ps_best_pos[co_idx],ps_best_pos[idx],0.618,2)
             else:
                 follow_idx=idxs[i%cub_start]
-                ps_pos[idx]=(best_pos+ps_best_pos[follow_idx]+ps_best_pos[idx])/3+np.random.randn(num_city)*0.2*scale
+                ps_pos[idx]=close_to(ps_pos[idx],ps_best_pos[follow_idx],ps_best_pos[idx],0.618,1)
                 
-
 
         ps_cost=np.apply_along_axis(cost_fn, axis=1, arr=ps_pos, distance_matrix=distance_matrix)
         idxs2= ps_cost<ps_best_cost
@@ -64,7 +64,6 @@ def main():
         if (ps_cost[min_idx]<best_cost):
             best_cost=ps_cost[min_idx]
             best_pos=ps_pos[min_idx]
-            
             flag=''
             for i,idx in enumerate(idxs):
                 if idx==min_idx:
