@@ -1,0 +1,18 @@
+algorithms:
+  - name: A
+    parameters:
+      param1: 1
+      param2: 3
+  - name: B
+    parameters:
+      param1: 2
+      param2: 4
+
+test_cases:
+  - name: TestCase1
+    type: JSP
+    file: 001.txt
+  - name: TestCase2
+    type: FJSP
+    file: 002.txt
+

@@ -6,7 +6,7 @@ if __name__ == '__main__':
     cnt=10
 
     parser:IParse=ParserExcel()
-    info=parser.parse('fjsp/demo/3x3-same.xlsx')
+    info=parser.parse('epsp/demo/2x(4+2).xlsx')
     env=PlateJobShopEnv({},[info.jobs]*cnt)
     
     for _ in range(cnt):

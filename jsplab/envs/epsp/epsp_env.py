@@ -33,7 +33,6 @@ class PlateJobShopEnv(gym.Env):
     def __init__(self, config: dict, data: List[List[Task]],render_mode=None):
         
         self.render_mode = render_mode
-        self.render_mode = render_mode
         # import data containing all instances
         self.data: List[List[Task]] = data
         self.num_machines: int = len(self.data[0][0].machines)
