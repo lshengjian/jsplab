@@ -5,8 +5,7 @@ import copy
 from gymnasium import spaces
 import gymnasium as gym
 from jsplab.core import Task,convert2fjsp_data
-
-
+EPS=1e-10
 class FlexJobShopEnv(gym.Env):
     """
     Scheduling environment for scheduling optimization according to
@@ -27,8 +26,7 @@ class FlexJobShopEnv(gym.Env):
     :param data: Scheduling problem to be solved, so a list of instances
 
     """
-    def __init__(self, config: dict, data: List[List[Task]],render_mode=None):
-        
+    def __init__(self, config: Dict, data: List[List[Task]],render_mode=None):
         self.render_mode = render_mode
         # import data containing all instances
         self.data: List[List[Task]] = data
@@ -55,7 +53,7 @@ class FlexJobShopEnv(gym.Env):
         self.episodes_makespans: List = []
 
 
-        self.action_space: spaces.Discrete = spaces.Discrete(self.max_num_jobs*self.num_machines)
+        self.action_space: spaces.Discrete = spaces.Discrete(self.max_num_jobs*self.num_machines) #？？
         # overwrite observation space
         observation_shape = np.array(self.state_obs).shape
         self.observation_space: spaces.Box = spaces.Box(low=0, high=1, shape=observation_shape)
@@ -109,8 +107,10 @@ class FlexJobShopEnv(gym.Env):
             selected_task_id, selected_task = self.get_selected_task(job)
             # selected_machine = self.choose_machine(selected_task)
             
-            self.execute_action(job, selected_task, machine)
-            print(selected_task,selected_task.selected_machine,self.get_makespan())
+            if self.execute_action(job, selected_task, machine):
+                print(selected_task,selected_task.selected_machine,self.get_makespan())
+            else:
+                print(f'invalid machine:{machine} for job:{job}')
         else:
             # if the action is not valid/executable/scheduable
             print('invalid action:',action)
@@ -177,8 +177,8 @@ class FlexJobShopEnv(gym.Env):
         self.task_job_mapping:Dict[Tuple[int,int],int] = {(task.job_index, task.task_index): i for i, task in enumerate(self.tasks)}
 
         # retrieve maximum deadline of the current instance
-        max_deadline = max([task.deadline for task in self.tasks])
-        self.max_deadline:int = max_deadline if max_deadline > 0 else 1
+        # max_deadline = max([task.deadline for task in self.tasks])
+        # self.max_deadline:int = max_deadline if max_deadline > 0 else 1
         action_mask = self.get_action_mask()
         return self.state_obs,{'mask': action_mask}
 
@@ -216,9 +216,9 @@ class FlexJobShopEnv(gym.Env):
                 machines_for_next_task_per_job[task.job_index,:] = task._runtimes#task.machines
 
         # normalization
-        processing_times_on_machines /= (self.total_num_tasks * self.max_runtime+1e-10)
-        processing_times_per_job /= (self.max_num_tasks * self.max_runtime+1e-10)
-        operation_time_of_next_task_per_job /= (self.max_runtime+1e-10)
+        processing_times_on_machines /= (self.total_num_tasks * self.max_runtime+EPS)
+        processing_times_per_job /= (self.max_num_tasks * self.max_runtime+EPS)
+        operation_time_of_next_task_per_job /= (self.max_runtime+EPS)
 
         observation = np.concatenate([
             processing_times_on_machines,
@@ -297,7 +297,7 @@ class FlexJobShopEnv(gym.Env):
                                  np.full(len(possible_machines), np.inf))
         return int(np.argmin(machine_times))
     
-    def execute_action(self, job_id: int, task: Task, machine_id: int) -> None:
+    def execute_action(self, job_id: int, task: Task, machine_id: int) -> bool:
         """
         This Function executes a valid action
         - set machine
@@ -307,7 +307,7 @@ class FlexJobShopEnv(gym.Env):
         :param task: Task
         :param machine_id: ID of the machine on which the task is to be executed
 
-        :return: None
+        :return: bool
 
         """
         # check task preceding in the job (if it is not the first task within the job)
@@ -317,6 +317,8 @@ class FlexJobShopEnv(gym.Env):
             preceding_task = self.tasks[self.task_job_mapping[(job_id, task.task_index - 1)]]
             start_time_of_preceding_task = preceding_task.finished
 
+        if task._runtimes[machine_id]<1:
+            return False
         task.selected_machine = machine_id
         task.runtime=task._runtimes[machine_id]
         start_time = max(start_time_of_preceding_task, self.ends_of_machine_occupancies[machine_id])
@@ -330,6 +332,7 @@ class FlexJobShopEnv(gym.Env):
         task.finished = end_time
         
         task.done = True
+        return True
 
 
     def get_selected_task(self, job_idx: int) -> Tuple[int, Task]:

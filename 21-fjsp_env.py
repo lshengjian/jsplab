@@ -1,17 +1,21 @@
-from jsplab.instances.parsers import  IParse,ParserExcel
+from jsplab.instances.parsers import  IParse,ParserExcel,ParserFjspFile
 from jsplab.envs.fjsp.fjsp_env import FlexJobShopEnv
 from jsplab.agents.solver.fjsp import solve_fjsp 
 import numpy as np
 
 if __name__ == '__main__':
-    cnt=3
+    cnt=2
 
-    parser:IParse=ParserExcel()
-    info=parser.parse('fjsp/demo/3x3-same.xlsx')
+    #parser:IParse=ParserExcel()
     #info=parser.parse('fjsp/demo/3x3.xlsx')
+
+    #
+    parser:IParse=ParserFjspFile()
+    info=parser.parse('fjsp/MK/Mk01.fjs')
     steps,actions=solve_fjsp(info)
     print("or-tools:",steps)
-    print(actions)#[2, 1, 0, 2, 1, 0, 2, 1, 0]
+    print(actions)
+
     env=FlexJobShopEnv({},[info.jobs]*cnt)
     
     for i in range(cnt):
@@ -29,9 +33,8 @@ if __name__ == '__main__':
             else:
                 jobs=np.where(mask>0)[0]
                 job=np.random.choice(jobs,1)[0]
-                machine=np.random.randint(0,env.num_machines)
-                
-
+                selected_task_id, selected_task = env.get_selected_task(job)
+                machine=env.choose_machine(selected_task)#np.random.randint(0,env.num_machines)
                        
             obs,r,done,timeout,info=env.step(env.num_machines*job+machine)
             idx+=1
