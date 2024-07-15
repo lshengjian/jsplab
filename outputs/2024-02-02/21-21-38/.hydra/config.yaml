@@ -1,5 +1,0 @@
-debug: false
-server:
-  name: apache
-  db:
-    name: mysql

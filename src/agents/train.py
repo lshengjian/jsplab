@@ -14,14 +14,14 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 # Functional imports
-from src.agents import intermediate_test
-from src.agents import test
-from src.environments.environment_loader import EnvironmentLoader
-from src.utils.file_handler.data_handler import DATA_DIRECTORY
-from src.utils.file_handler.model_handler import ModelHandler
-from src.data_generator.task import Task
-from src.utils.logger import Logger
-from src.agents.train_test_utility_functions import get_agent_class_from_config, load_config, load_data
+from src0.agents import intermediate_notest
+from src0.agents import notest
+from src0.environments.environment_loader import EnvironmentLoader
+from src0.utils.file_handler.data_handler import DATA_DIRECTORY
+from src0.utils.file_handler.model_handler import ModelHandler
+from src0.data_generator.task import Task
+from src0.utils.logger import Logger
+from src0.agents.train_test_utility_functions import get_agent_class_from_config, load_config, load_data
 
 
 def final_evaluation(config: dict, data_test: List[List[Task]], logger: Logger):
@@ -43,7 +43,7 @@ def final_evaluation(config: dict, data_test: List[List[Task]], logger: Logger):
     # create anv and agent
     agent = get_agent_class_from_config(config)
     best_model = agent.load(file=best_model_path, config=config, logger=logger)
-    evaluation_results = test.test_model_and_heuristic(config=config, model=best_model, data_test=data_test,
+    evaluation_results = notest.test_model_and_heuristic(config=config, model=best_model, data_test=data_test,
                                                        logger=logger, plot_ganttchart=False, log_episode=True)
 
     # log the metric which you find most relevant (this should be used to optimize a hyperparameter sweep)
@@ -75,7 +75,7 @@ def training(config: dict, data_train: List[List[Task]], data_val: List[List[Tas
     agent = get_agent_class_from_config(config)(env=env, config=config, logger=logger)
 
     # create IntermediateTest class to save new optimum model every <n_test_steps> steps
-    inter_test = intermediate_test.IntermediateTest(env_config=config,
+    inter_test = intermediate_notest.IntermediateTest(env_config=config,
                                                     n_test_steps=config.get('intermediate_test_interval'),
                                                     data=data_val, logger=logger)
 

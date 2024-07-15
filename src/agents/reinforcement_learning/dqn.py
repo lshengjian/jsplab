@@ -14,7 +14,7 @@ import torch.optim as optim
 from torch.nn import functional as F
 from typing import Tuple, List
 
-from src.utils.logger import Logger
+from src0.utils.logger import Logger
 
 # constants
 LAYER: List[int] = [64, 64]

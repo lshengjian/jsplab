@@ -12,12 +12,12 @@ from pathlib import Path
 # Functional imports
 import pickle
 from typing import List, Dict
-from src.data_generator.task import Task
+from src0.data_generator.task import Task
 
 # Constants
 DATA_DIRECTORY: Path = Path(__file__).parent.parent.parent.parent / 'data' / 'instances'
 SOLVER_DATA_DIRECTORY: Path = Path(__file__).parent.parent.parent.parent / 'data' / 'models' / 'solver_solution'
-FILE_PATH_VARIABLES: List[str] = ['sp_type', 'num_jobs', 'num_tasks', 'num_tools']
+FILE_PATH_VARIABLES: List[str] = ['jsp_type', 'num_jobs', 'num_tasks', 'num_tools']
 SOLVER_DATA_DICT: str = 'instance_dict.pkl'
 INSTANCES_FILE_CONFIG_KEY: str = 'instances_file'
 

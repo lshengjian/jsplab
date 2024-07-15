@@ -1,5 +1,5 @@
-from jsplab.instances.parsers import  IParse,ParserExcel,ParserFjspFile
-from jsplab.agents.solver.fjsp import solve_fjsp 
+from src.instances.parsers import  IParse,ParserExcel,ParserFjspFile
+from src.agents.solver.fjsp import solve_fjsp 
 
 if __name__ == '__main__':
 

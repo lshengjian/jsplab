@@ -1,8 +1,8 @@
-from jsplab.envs.environment_loader import EnvironmentLoader
-from jsplab.instances.parsers import  IParse,ParserExcel,ParserFjspFile
-from jsplab.agents.solver.fjsp import solve_fjsp 
-from jsplab.envs.epsp.epsp_env import PlateJobShopEnv
-from jsplab.agents.test import run_episode
+from src.envs.old.environment_loader import EnvironmentLoader
+from src.instances.parsers import  IParse,ParserExcel,ParserFjspFile
+from src.agents.solver.fjsp import solve_fjsp 
+from src.envs.epsp_env import PlateJobShopEnv
+from src.agents.test import run_episode
 if __name__ == '__main__':
     parser:IParse=ParserExcel()
     info=parser.parse('fjsp/demo/3x3-same.xlsx')

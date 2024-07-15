@@ -1,6 +1,6 @@
-from jsplab.instances.parsers import  IParse,ParserExcel,ParserFjspFile
-from jsplab.envs.fjsp.fjsp_env import FlexJobShopEnv
-from jsplab.agents.solver.fjsp import solve_fjsp 
+from src.instances.parsers import  IParse,ParserExcel,ParserFjspFile
+from src.envs.fjsp_env import FlexJobShopEnv
+from src.agents.solver.fjsp import solve_fjsp 
 import numpy as np
 
 if __name__ == '__main__':

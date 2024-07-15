@@ -38,9 +38,11 @@ Add a heuristic that returns zeros (this is not a practical example!)
 
 """
 import numpy as np
+from numpy.typing import NDArray
+
 from typing import List
 
-from src.data_generator.task import Task
+from src.core import Task
 
 
 def get_active_task_dict(tasks: List[Task]) -> dict:
@@ -61,7 +63,7 @@ def get_active_task_dict(tasks: List[Task]) -> dict:
     return active_job_task_dict
 
 
-def edd(tasks: List[Task], action_mask: np.array) -> int:
+def edd(tasks: List[Task], action_mask: NDArray) -> int:
     """
     EDD: earliest due date. Determines the job with the smallest deadline
 
@@ -87,7 +89,7 @@ def edd(tasks: List[Task], action_mask: np.array) -> int:
     return chosen_job
 
 
-def spt(tasks: List[Task], action_mask: np.array) -> int:
+def spt(tasks: List[Task], action_mask: NDArray) -> int:
     """
     SPT: shortest processing time first. Determines the job of which the next unfinished task has the lowest runtime
 
@@ -113,7 +115,7 @@ def spt(tasks: List[Task], action_mask: np.array) -> int:
     return chosen_job
 
 
-def mtr(tasks: List[Task], action_mask: np.array) -> int:
+def mtr(tasks: List[Task], action_mask: NDArray) -> int:
     """
     MTR: most tasks remaining. Determines the job with the least completed tasks
 
@@ -127,15 +129,16 @@ def mtr(tasks: List[Task], action_mask: np.array) -> int:
         chosen_job = np.argmax(action_mask)
     else:
         tasks_done = np.zeros(len(tasks) + 1)
-        possible_tasks = get_active_task_dict(tasks)
+        next_tasks = get_active_task_dict(tasks)#未完工的job的下个任务的全局索引。 key:job_idx,value:task_idx
         for _, task in enumerate(tasks):
-            if task.done and task.job_index in possible_tasks.keys():
-                tasks_done[possible_tasks[task.job_index]] += 1
+            if task.done and task.job_index in next_tasks.keys():
+                #tasks_done[next_tasks[task.job_index]] += 1
+                tasks_done[next_tasks[task.job_index]] += task.runtime
 
         task_mask = np.zeros(len(tasks) + 1)
-        for job_id, task_id in possible_tasks.items():
+        for job_id, task_id in next_tasks.items():
             if action_mask[job_id] == 1:
-                task_mask[task_id] += 1
+                task_mask[task_id] = 1 # +=1
         tasks_done = np.where(task_mask == 1, tasks_done, np.full(tasks_done.shape, np.inf))
         tasks_done[-1] = np.inf
         chosen_task = np.argmin(tasks_done)
@@ -189,12 +192,12 @@ def random_task(tasks: List[Task], action_mask: np.array) -> int:
     else:
         valid_values_0 = np.where(action_mask > 0)[0]
 
-        if len(valid_values_0) > 2:
+        if len(valid_values_0) > 0:
             chosen_job = np.random.choice(valid_values_0, size=1)[0]
-        elif len(valid_values_0) == 0:
-            print('this is not possible')
         else:
-            chosen_job = np.random.choice(valid_values_0, size=1)[0]
+            print('this is not possible')
+        # else:
+        #     chosen_job = np.random.choice(valid_values_0, size=1)[0]
     return chosen_job
 
 

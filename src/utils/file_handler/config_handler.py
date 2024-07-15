@@ -21,7 +21,7 @@ import json
 import jsonschema
 
 # Constants
-CONFIG_DIRECTORY: Path = Path(__file__).parent.parent.parent.parent / 'config'
+CONFIG_DIRECTORY: Path = Path(__file__).parent.parent.parent / 'config'
 DIRECTORY_PATH_VARIABLES: Dict[str, str] = {'data_generation': 'sp_type', 'training': 'algorithm',
                                             'testing': 'test_algorithm'}
 CONFIG_REQUIREMENTS_FILE: Path = Path(__file__).parent / 'config_requirements.json'

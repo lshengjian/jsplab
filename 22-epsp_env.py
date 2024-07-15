@@ -1,9 +1,9 @@
-from jsplab.instances.parsers import  IParse,ParserExcel
-from jsplab.envs.epsp.epsp_env import PlateJobShopEnv
+from src.instances.parsers import  IParse,ParserExcel
+from src.envs.epsp_env import PlateJobShopEnv
 import numpy as np
 
 if __name__ == '__main__':
-    cnt=10
+    cnt=1
 
     parser:IParse=ParserExcel()
     info=parser.parse('epsp/demo/2x(4+2).xlsx')

@@ -1,7 +1,7 @@
 
-from jsplab.agents.solver.epsp import solve_epsp
-from jsplab.instances.parsers import *
-from jsplab.utils.comm_helper import load_config
+from src.agents.solver.epsp import solve_epsp
+from src.instances.parsers import *
+from src.utils.common import load_config
 if __name__ == '__main__':
     cfg=load_config('conf/demo/or-tools-solver.yaml')
     print(cfg)
