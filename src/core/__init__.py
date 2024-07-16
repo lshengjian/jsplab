@@ -1,5 +1,6 @@
+from .machine import Machine
 from .task import *
-from .machine import *
-from .job import *
+from .job import Job
 
-from .instance_info import *
+from .instance import Instance
+from .parsers import *

@@ -8,36 +8,30 @@ OpTime = namedtuple("OpTime", "machine duration")
 # Point = namedtuple('Point', ['x', 'y'], defaults=(0.0, 0.0))
 class Task:
     def __init__(self, job_index: int, task_index: int,
-                 op_times: List[int] = None,
-                 runtime: int = -1, started: int = -1, finished: int = 0, selected_machine: int = -1,
-                 ):
+                 op_times: List[int] = None
+                ):
 
         # test for correct data type of required and throw type error otherwise
         if not isinstance(job_index, int) or not isinstance(task_index, int):
             raise TypeError("Job index and task index must be of type int.")
-        # public - static - required - don't touch after init
+        # required - don't touch after init
         self.job_index = job_index #作业索引号，从0开始
         self.task_index = task_index #任务索引号，从0开始
 
-
-
-        # public - non-static - optional
-        self.runtime = runtime  #没有开始前存可能的最长加工时间，开始时记录实际加工的时间
-        self.started = started
-        self.finished = finished
-        self.selected_machine = selected_machine
-
-        # public - static - optional - don't touch after init
-        #self._machine_masks = [] # like (1,0,1) 说明机器1和3能用
+        # optional - don't touch after init
+        self.runtime = 0  #没有开始前存可能的最长加工时间，开始时记录实际加工的时间
         self._runtimes = [] #保存每个机器的实际加工时间
         self.machines = op_times 
+        # optional
+        self.time_started = -1
+        self.time_finished = -1
+        self.selected_machine_index = -1
+
 
     @property 
     def machines(self):
         times=self._runtimes
-        self.runtime=max(times)
         data=np.where(times>0,np.ones_like(times),times)
-        
         return data.tolist()
     
     @machines.setter

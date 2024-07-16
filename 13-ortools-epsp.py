@@ -1,4 +1,4 @@
-from src.instances.parsers import  IParse,ParserExcel,ParserFjspFile,InstanceInfo
+from src.core.parsers import  IParse,ParserExcel,ParserFjspFile,Instance
 from src.agents.solver.epsp_solver import OrToolSolver
 from src.utils.common import load_config
 if __name__ == '__main__':

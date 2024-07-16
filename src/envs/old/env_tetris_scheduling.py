@@ -313,9 +313,9 @@ class Env(gym.Env):
         self.job_task_state[job_id] += 1
 
         # update job and task
-        task.started = start_time
-        task.finished = end_time
-        task.selected_machine = machine_id
+        task.time_started = start_time
+        task.time_finished = end_time
+        task.selected_machine_index = machine_id
         task.done = True
 
     def compute_reward(self) -> Any:

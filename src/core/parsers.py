@@ -4,23 +4,22 @@ import numpy as np
 from collections import defaultdict
 import pandas as pd
 from pathlib import Path
-from ..core import Task,InstanceInfo
+from . import Task,Instance
 
-
-from ..utils.text_helper import *
-
+from ..utils.split import *
+__all__=['IParse','ExcelFileParser','StandardFjspFileParser','StandardJspFileParser' ]
 # 定义一个接口类
 class IParse(ABC):
     @abstractmethod
-    def parse(self,fname:str)->InstanceInfo:
+    def parse(self,fname:str)->Instance:
         pass
 
-    def debug(self,info:InstanceInfo):
-        for task in info.jobs:
+    def debug(self,info:Instance):
+        for task in info.tasks:
             print(task.debug_info())
 
 class ExcelFileParser(IParse):
-    def parse(self,fname:str)->InstanceInfo:
+    def parse(self,fname:str)->Instance:
         fp=Path(__file__).parent.parent.parent/('data/'+ fname)
         name=fp.stem
         jobs:List[Task]=[]
@@ -44,14 +43,14 @@ class ExcelFileParser(IParse):
             task_idxs[job_idx]+=1
             ms=row[1:] 
             idx=np.argmax(ms)
-            task=Task(job_idx,task_idx,runtime=ms[idx],op_times=ms)
+            task=Task(job_idx,task_idx,op_times=ms)
             jobs.append(task)
         first_agv_idx=None if len(agv_idxs)==0 else min(agv_idxs)
-        return InstanceInfo(name,jobs,offsets,first_agv_idx)
+        return Instance(name,jobs,offsets,first_agv_idx)
 
 
 class StandardFjspFileParser(IParse):
-    def parse(self,fname:str)->InstanceInfo:
+    def parse(self,fname:str)->Instance:
         fp=Path(__file__).parent.parent.parent/('data/'+ fname)
         name=fp.stem
         jobs:List[Task]=[]
@@ -66,20 +65,20 @@ class StandardFjspFileParser(IParse):
                 times=[0]*n_m
                 num_machine = data[idx]  # 该任务可在几台机器上进行
                 next_idx = idx + 2 * num_machine + 1
-                max_runtime=0
+                #max_runtime=0
                 for k in range(num_machine):
                     mch_idx = data[idx + 2 * k + 1]-1
                     pt = data[idx + 2 * k + 2]  # 加工处理时间
                     times[mch_idx]=pt
-                    if max_runtime<pt:
-                        max_runtime=pt
-                task=Task(job_idx,task_idx,runtime=max_runtime,op_times=times)
+                    # if max_runtime<pt:
+                    #     max_runtime=pt
+                task=Task(job_idx,task_idx,op_times=times)
                 jobs.append(task)
                 idx = next_idx
-        return InstanceInfo(name,jobs,list(range(n_m)),None)
+        return Instance(name,jobs,list(range(n_m)),None)
 
 class StandardJspFileParser(IParse):
-    def parse(self,fname:str)->InstanceInfo:
+    def parse(self,fname:str)->Instance:
         """
             Convert text form of the data into matrix form
         :param text: the standard text form of the instance
@@ -98,6 +97,6 @@ class StandardJspFileParser(IParse):
                 m, t = data[i], data[i+1]
                 times=[0]*n_m
                 times[m]=t
-                task=Task(job_idx,i//2,runtime=t,op_times=times)
+                task=Task(job_idx,i//2,op_times=times)
                 jobs.append(task)
-        return InstanceInfo(name,jobs,list(range(n_m)),None)
+        return Instance(name,jobs,list(range(n_m)),None)

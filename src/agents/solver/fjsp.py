@@ -3,14 +3,14 @@ from ortools.sat.python import cp_model
 
 from .util import *
 from src.core import convert2fjsp_data
-from src.instances.parsers import InstanceInfo
+from src.core.parsers import Instance
 
 
 
-def solve_fjsp(info:InstanceInfo):
+def solve_fjsp(info:Instance):
     """Solve a small flexible jobshop problem."""
 
-    jobs=convert2fjsp_data(info.jobs)
+    jobs=convert2fjsp_data(info.tasks)
     num_jobs = len(jobs)
     #all_jobs = range(num_jobs)
     machines_count = 1 + max(op_time.machine for job in jobs for task in job for op_time in task)

@@ -1,7 +1,7 @@
 from ortools.sat.python import cp_model
 from .util import *
 from src.core import convert2fjsp_data
-from src.instances.parsers import InstanceInfo
+from src.core.parsers import Instance
 from typing import  List
 import time
 
@@ -35,14 +35,14 @@ def simulate(solver,agv_pos,machine_offsets):
 #def limit_stay(model,pos,time=2,dir=1):
 
 
-def solve_epsp(info: InstanceInfo,agv_up_time=2,agv_down_time=2):
+def solve_epsp(info: Instance,agv_up_time=2,agv_down_time=2):
     """Solve a small ep jobshop problem."""
     machines_count = len(info.machine_offsets)
-    horizon = sum(task.runtime for task in info.jobs)
+    horizon = sum(task.runtime for task in info.tasks)
     horizon+=horizon//5
     print(f"Horizon :{horizon}")
 
-    jobs = convert2fjsp_data(info.jobs)
+    jobs = convert2fjsp_data(info.tasks)
     all_machines = range(machines_count)
     model = cp_model.CpModel()
 

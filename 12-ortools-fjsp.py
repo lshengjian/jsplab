@@ -1,4 +1,4 @@
-from src.instances.parsers import  IParse,ParserExcel,ParserFjspFile
+from src.core.parsers import  IParse,ParserExcel,ParserFjspFile
 from src.agents.solver.fjsp import solve_fjsp 
 
 if __name__ == '__main__':

@@ -108,7 +108,7 @@ class FlexJobShopEnv(gym.Env):
             # selected_machine = self.choose_machine(selected_task)
             
             if self.execute_action(job, selected_task, machine):
-                print(selected_task,selected_task.selected_machine,self.get_makespan())
+                print(selected_task,selected_task.selected_machine_index,self.get_makespan())
             else:
                 print(f'invalid machine:{machine} for job:{job}')
         else:
@@ -209,8 +209,8 @@ class FlexJobShopEnv(gym.Env):
         next_tasks = self.get_next_tasks()
         for task in self.tasks:
             if task.done:
-                processing_times_on_machines[task.selected_machine] += task._runtimes[task.selected_machine]
-                processing_times_per_job[task.job_index] += task._runtimes[task.selected_machine]
+                processing_times_on_machines[task.selected_machine_index] += task._runtimes[task.selected_machine_index]
+                processing_times_per_job[task.job_index] += task._runtimes[task.selected_machine_index]
             elif task == next_tasks[task.job_index]:  # next task of the job
                 #operation_time_of_next_task_per_job[task.job_index] = task.runtime
                 machines_for_next_task_per_job[task.job_index,:] = task._runtimes#task.machines
@@ -315,11 +315,11 @@ class FlexJobShopEnv(gym.Env):
             start_time_of_preceding_task = 0
         else:
             preceding_task = self.tasks[self.task_job_mapping[(job_id, task.task_index - 1)]]
-            start_time_of_preceding_task = preceding_task.finished
+            start_time_of_preceding_task = preceding_task.time_finished
 
         if task._runtimes[machine_id]<1:
             return False
-        task.selected_machine = machine_id
+        task.selected_machine_index = machine_id
         task.runtime=task._runtimes[machine_id]
         start_time = max(start_time_of_preceding_task, self.ends_of_machine_occupancies[machine_id])
         
@@ -328,8 +328,8 @@ class FlexJobShopEnv(gym.Env):
         self.ends_of_machine_occupancies[machine_id] = end_time
         self.job_task_state[job_id] += 1
         # update job and task
-        task.started = start_time
-        task.finished = end_time
+        task.time_started = start_time
+        task.time_finished = end_time
         
         task.done = True
         return True

@@ -1,4 +1,4 @@
-from src.instances.parsers import  IParse,ParserExcel,ParserFjspFile
+from src.core.parsers import  IParse,ParserExcel,ParserFjspFile
 from src.envs.fjsp_env import FlexJobShopEnv
 from src.agents.solver.fjsp import solve_fjsp 
 import numpy as np
@@ -16,7 +16,7 @@ if __name__ == '__main__':
     print("or-tools:",steps)
     print(actions)
 
-    env=FlexJobShopEnv({},[info.jobs]*cnt)
+    env=FlexJobShopEnv({},[info.tasks]*cnt)
     
     for i in range(cnt):
         idx=0

@@ -1,6 +1,6 @@
 from typing import  Generic,Callable,  Optional, List,TypeVar
 from rich.text import Text
-from ..core.defines import *
+from ..common import *
 T = TypeVar('T')
 class Node(Generic[T]):
     def __init__(self, data: T):
@@ -66,17 +66,17 @@ class LinkedList(Generic[T]):
             current = current.next
         return ','.join(result)    
     
-    def display(self) -> None:
-        current: Optional[Node] = self.head
-        while current:
-            if current == self.head:
-                console.print(Text(str(current.data), style="bold red"), end=' ')
-            elif current.next is None:
-                console.print(Text(str(current.data), style="bold blue"), end=' ')
-            else:
-                console.print(str(current.data),style="green", end=' ')
-            current = current.next
-        print()
+    # def display(self) -> None:
+    #     current: Optional[Node] = self.head
+    #     while current:
+    #         if current == self.head:
+    #             console.print(Text(str(current.data), style="bold red"), end=' ')
+    #         elif current.next is None:
+    #             console.print(Text(str(current.data), style="bold blue"), end=' ')
+    #         else:
+    #             console.print(str(current.data),style="green", end=' ')
+    #         current = current.next
+    #     print()
 
 if __name__ == '__main__':
 

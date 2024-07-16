@@ -1,7 +1,6 @@
-
 from src.core import  *
 
-def demo():
+def test_job():
     paser:IParse=ExcelFileParser()
     info=paser.parse('fjsp/demo/3x3.xlsx')
     data=info.tasks
@@ -10,12 +9,14 @@ def demo():
     for task in info.tasks:
         if task.job_index==0:
             job.add_task(task)
-    print(job)
+
+    assert 'J1[0.00] 1:5 2:6 3:3 '==str(job)
     ma=Machine()
     job.assign(ma)
-    print(job)
+    assert 'J1[0.25] 1:3 2:6 3:3 '==str(job)
 
-if __name__ == '__main__':
-    demo()
 
- 
+
+    
+
+    

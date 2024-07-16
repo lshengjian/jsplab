@@ -2,8 +2,8 @@
 import collections
 from ortools.sat.python import cp_model
 from src.core import convert2jsp_data
-from src.instances.parsers import InstanceInfo
-def solve_jsp(info:InstanceInfo):
+from src.core.parsers import Instance
+def solve_jsp(info:Instance):
     """Minimal jobshop problem."""
     # Data.
     # jobs_data = [  # task = (machine_id, processing_time).
@@ -12,7 +12,7 @@ def solve_jsp(info:InstanceInfo):
     #     [(1, 4), (2, 3)],  # Job2
     # ]
 
-    jobs_data=convert2jsp_data(info.jobs)
+    jobs_data=convert2jsp_data(info.tasks)
     machines_count = 1 + max(task[0] for job in jobs_data for task in job)
     all_machines = range(machines_count)
     # Computes horizon dynamically as the sum of all durations.

@@ -327,7 +327,7 @@ class PlateJobShopEnv(gym.Env):
             start_time_of_preceding_task = 0
         else:
             preceding_task = self.tasks[self.task_job_mapping[(job_id, task.task_index - 1)]]
-            start_time_of_preceding_task = preceding_task.finished
+            start_time_of_preceding_task = preceding_task.time_finished
 
         start_time = max(start_time_of_preceding_task, self.ends_of_machine_occupancies[machine_id])
         end_time = start_time + task.runtime
@@ -335,9 +335,9 @@ class PlateJobShopEnv(gym.Env):
         self.ends_of_machine_occupancies[machine_id] = end_time
         self.job_task_state[job_id] += 1
         # update job and task
-        task.started = start_time
-        task.finished = end_time
-        task.selected_machine = machine_id
+        task.time_started = start_time
+        task.time_finished = end_time
+        task.selected_machine_index = machine_id
         task.done = True
 
 

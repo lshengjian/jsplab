@@ -16,8 +16,6 @@ class Machine:
             if op.start-last>=duration and last<=start: #能插进空隙中去
                 self.ops.append(OpInfo(start,end,job_idx,task_idx))
                 found=True
-                # if end>self._last_time:
-                #     self._last_time=end
                 break
             last=op.end
         if not found:
@@ -30,6 +28,7 @@ class Machine:
                 self._last_time=end
         self.ops.sort()
         return end
+    
     @property 
     def last_time(self):  
         return self._last_time
@@ -43,10 +42,10 @@ class Machine:
         return total/cur_time if cur_time>0 else 0
     
     def __str__(self):
-        rt = f'M{self.index+1}[{self.utilization_rate():.2f}]: '
+        rt = f'M{self.index+1}[{self.utilization_rate():.2f}]:'
         for op in self.ops:
-            name = f'{op.job_idx+1}-{op.task_idx+1}'
-            rt += f'{name}[{op.start},{op.end}] '
+            name =''  if op.job_idx<0 and op.task_idx<0 else f'{op.job_idx+1}-{op.task_idx+1}'
+            rt += f'{name} {op.start}->{op.end}|'
         return    rt 
 if __name__ == "__main__":
     ma=Machine()
@@ -56,7 +55,7 @@ if __name__ == "__main__":
     ma.add_op(8,2)
     assert ma.last_time==10
     ma.add_op(2,3)
-    print(ma.ops)
+    #print(ma.ops)
     assert ma.last_time==10
     print(ma.utilization_rate(10))
     print(ma)

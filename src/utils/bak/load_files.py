@@ -16,14 +16,6 @@ def files_in_dir(directory: str) -> List[Path]:
 
     for file in dir.glob('*'):
         if file.is_file:
-            # with open(file, 'r') as f:
-            #     text = f.readlines()
-            # ins=None
-            # if file.suffix=='.fjs':
-            #     ins = InstanceFJSP(file.stem)
-            # elif file.suffix=='.js':
-            #     ins=InstanceJSP(file.stem)
-            # ins.parse(text)
             rt.append(file)
 
     return rt

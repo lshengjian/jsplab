@@ -1,5 +1,5 @@
 from src.envs.old.environment_loader import EnvironmentLoader
-from src.instances.parsers import  IParse,ParserExcel,ParserFjspFile
+from src.core.parsers import  IParse,ParserExcel,ParserFjspFile
 from src.agents.solver.fjsp import solve_fjsp 
 from src.envs.epsp_env import PlateJobShopEnv
 from src.agents.test import run_episode
@@ -9,8 +9,8 @@ if __name__ == '__main__':
     steps,actions=solve_fjsp(info)
     print("or-tools:",steps)
     print(actions)
-    instance_list=[info.jobs]
-    env=PlateJobShopEnv({},[info.jobs]*1)
+    instance_list=[info.tasks]
+    env=PlateJobShopEnv({},[info.tasks]*1)
 
 
     TEST_HEURISTICS = ['rand','MTR','SPT', 'EDD',   'LTR']#'MTR' is best

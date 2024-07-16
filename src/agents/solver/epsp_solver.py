@@ -3,20 +3,20 @@ from rich.text import Text
 from .util import *
 from src.core import convert2fjsp_data,Task,console
 from src.utils.common import get_agv_flags
-from src.instances.parsers import InstanceInfo
+from src.core.parsers import Instance
 from typing import  List,Dict,Tuple
 import time
 import numpy as np
-def get_horizon(info: InstanceInfo,agv_up_time=2,agv_down_time=2):
+def get_horizon(info: Instance,agv_up_time=2,agv_down_time=2):
     rt=0
-    for task_id in range(len(info.jobs)-1):
+    for task_id in range(len(info.tasks)-1):
         if task_id%2==0:
-            task=info.jobs[task_id]
+            task=info.tasks[task_id]
             rt+=task.runtime
             #print(task_id+1,task.runtime)
         else:
-            pre=info.jobs[task_id-1]
-            next=info.jobs[task_id+1]
+            pre=info.tasks[task_id-1]
+            next=info.tasks[task_id+1]
             #print(pre.str_info(),next.str_info())
             m1_idxs=np.nonzero(pre.machines)[0]
             m2_idxs=np.nonzero(next.machines)[0]
@@ -27,20 +27,20 @@ def get_horizon(info: InstanceInfo,agv_up_time=2,agv_down_time=2):
             dt=abs(x2-x1)+agv_up_time+agv_down_time# todo
             #print(x1,x2,dt)
             rt+=dt 
-    task=info.jobs[-1]#最后一个加工处理
+    task=info.tasks[-1]#最后一个加工处理
     rt+=task.runtime
     return rt
         
 
 class OrToolSolver:
-    def __init__(self,info: InstanceInfo,agv_up_time=2,agv_down_time=2):
+    def __init__(self,info: Instance,agv_up_time=2,agv_down_time=2):
         #self.info: InstanceInfo=info
         self.agv_up_time=agv_up_time
         self.agv_down_time=agv_down_time
         self.offsets = info.machine_offsets
         self.min_x, self.max_x = min(self.offsets), max(self.offsets)
         self.machines_count = len(self.offsets)
-        self.jobs = convert2fjsp_data(info.jobs)
+        self.jobs = convert2fjsp_data(info.tasks)
         self.agv_start = info.first_agv_index
         self.agv_num = self.machines_count - self.agv_start
         self.horizon=get_horizon(info,agv_up_time,agv_down_time)

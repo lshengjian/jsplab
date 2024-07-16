@@ -1,22 +1,22 @@
 from .task import Task,convert2fjsp_data,OpTime
-from typing import Tuple,List,Dict
+from typing import List
 from collections import defaultdict
 import numpy as np
-class InstanceInfo:
-    def __init__(self,name='',jobs:List[Task]=[], \
-                 offsets:List[int]=[],first_agv_index:int=None):
+
+class Instance:
+    def __init__(self,name='',tasks:List[Task]=[], \
+                 offsets:List[int]=[],first_crane_index:int=None):
         self.name:str=name
-        self.jobs:List[Task]=jobs
+        self.tasks:List[Task]=tasks
         self.machine_offsets:List[int]=offsets
-        self.first_agv_index:int=first_agv_index
+        self.first_agv_index:int=first_crane_index
         self.setup()
-    # def convert2ortools(self):
-    #     return convert2fjsp_data(self.jobs)
     
     def setup(self):
-        data=convert2fjsp_data(self.jobs)
+        data=convert2fjsp_data(self.tasks)
+        #print(data)
         self.num_jobs = num_jobs=len(data)
-        self.num_machines = num_machines=len(self.jobs[0].machines)
+        self.num_machines = num_machines=len(self.tasks[0].machines)
         max_alt_machines=0
         op_times=defaultdict(list)
         num_tasks_job={}
@@ -24,6 +24,7 @@ class InstanceInfo:
         for j,job in enumerate(data):
             num_tasks_job[j]=0
             for t,task in enumerate(job):
+                #print(task)
                 if max_alt_machines<len(task):
                     max_alt_machines=len(task)
                 k=j,t

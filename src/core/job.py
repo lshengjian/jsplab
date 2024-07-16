@@ -12,7 +12,7 @@ class Job:
         self._cur_task_index=0
 
     def __str__(self):
-        rt = f'J{self.index+1}: {self.progress}'
+        rt = f'J{self.index+1}[{self.progress:.2f}] '
         for t in self._tasks:
             rt += f'{t.task_index+1}:{t.runtime} '
         return rt
@@ -32,14 +32,14 @@ class Job:
         ft=machine.add_op(self._last_time,op_time,self.index,task_index)
         self._last_time=ft
         self._last_machine=machine
-        task.finished=1
-        task.started=ft-op_time
+        task.time_finished=1
+        task.time_started=ft-op_time
         task.runtime=op_time
         self._cur_task_index+=1
 
     def greedy_select(self,ms:List[Machine])->Machine:
         op_times=np.array(self.cur_task._runtimes)
-        op_times[op_times<1]=9999 # todo
+        op_times[op_times<1]=1e10
         for i,t in enumerate(op_times):
             op_times[i]=t*(1+ms[i].utilization_rate(self._last_time))
         idxs=np.argsort(op_times)
@@ -65,7 +65,7 @@ class Job:
         total=0
         done=0
         for task in   self._tasks:
-            if task.finished>0:
+            if task.time_finished>0:
                 done+=task.runtime
             total+=task.runtime
         rt=0 if total==0 else done/total

@@ -1,4 +1,4 @@
-from src.instances.parsers import  IParse,StandardJspFileParser,ExcelFileParser
+from src.core.parsers import  IParse,StandardJspFileParser,ExcelFileParser
 from src.agents.solver.jsp import solve_jsp 
 
 if __name__ == '__main__':
