@@ -1,4 +1,4 @@
-from src.core.parsers import  IParse,ParserExcel,ParserFjspFile
+from src.core import  IParse,StandardFjspFileParser
 from src.envs.fjsp_env import FlexJobShopEnv
 from src.agents.solver.fjsp import solve_fjsp 
 import numpy as np
@@ -10,7 +10,7 @@ if __name__ == '__main__':
     #info=parser.parse('fjsp/demo/3x3.xlsx')
 
     #
-    parser:IParse=ParserFjspFile()
+    parser:IParse=StandardFjspFileParser()
     info=parser.parse('fjsp/MK/Mk01.fjs')
     steps,actions=solve_fjsp(info)
     print("or-tools:",steps)
@@ -37,6 +37,8 @@ if __name__ == '__main__':
                 machine=env.choose_machine(selected_task)#np.random.randint(0,env.num_machines)
                        
             obs,r,done,timeout,info=env.step(env.num_machines*job+machine)
+            if idx==0:
+                print(obs.shape)
             idx+=1
             
             if timeout:

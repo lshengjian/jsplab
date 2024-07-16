@@ -22,15 +22,18 @@ class ExcelFileParser(IParse):
     def parse(self,fname:str)->Instance:
         fp=Path(__file__).parent.parent.parent/('data/'+ fname)
         name=fp.stem
-        jobs:List[Task]=[]
+        tasks:List[Task]=[]
         offsets:List[Task]=[]
         df=pd.read_excel(fp,sheet_name="OpTime")
         machines=df.columns[1:].to_list()
+        machine_names=[]
         agv_idxs=[]
         for i,machine_name in enumerate(machines):
             ss=machine_name.split('|')
+            
             if len(ss)==2:
                 offsets.append(int(ss[1]))
+                machine_names.append(ss[0])
                 if ss[0].startswith('AGV'):
                     agv_idxs.append(i)
             else:
@@ -42,18 +45,18 @@ class ExcelFileParser(IParse):
             task_idx=task_idxs[job_idx]
             task_idxs[job_idx]+=1
             ms=row[1:] 
-            idx=np.argmax(ms)
+            #idx=np.argmax(ms)
             task=Task(job_idx,task_idx,op_times=ms)
-            jobs.append(task)
+            tasks.append(task)
         first_agv_idx=None if len(agv_idxs)==0 else min(agv_idxs)
-        return Instance(name,jobs,offsets,first_agv_idx)
+        return Instance(name,tasks,offsets,machine_names,first_agv_idx)
 
 
 class StandardFjspFileParser(IParse):
     def parse(self,fname:str)->Instance:
         fp=Path(__file__).parent.parent.parent/('data/'+ fname)
         name=fp.stem
-        jobs:List[Task]=[]
+        tasks:List[Task]=[]
         with open(fp, 'r') as f:
             lines = f.readlines()
         lines = clean_comment(lines)
@@ -73,9 +76,9 @@ class StandardFjspFileParser(IParse):
                     # if max_runtime<pt:
                     #     max_runtime=pt
                 task=Task(job_idx,task_idx,op_times=times)
-                jobs.append(task)
+                tasks.append(task)
                 idx = next_idx
-        return Instance(name,jobs,list(range(n_m)),None)
+        return Instance(name,tasks,list(range(n_m)),[],None)
 
 class StandardJspFileParser(IParse):
     def parse(self,fname:str)->Instance:
@@ -85,7 +88,7 @@ class StandardJspFileParser(IParse):
         """
         fp=Path(__file__).parent.parent.parent/('data/'+ fname)
         name=fp.stem
-        jobs:List[Task]=[]
+        tasks:List[Task]=[]
         with open(fp, 'r') as f:
             lines = f.readlines()
         lines = clean_comment(lines)
@@ -98,5 +101,5 @@ class StandardJspFileParser(IParse):
                 times=[0]*n_m
                 times[m]=t
                 task=Task(job_idx,i//2,op_times=times)
-                jobs.append(task)
-        return Instance(name,jobs,list(range(n_m)),None)
+                tasks.append(task)
+        return Instance(name,tasks,list(range(n_m)),[],None)

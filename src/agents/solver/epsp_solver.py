@@ -1,33 +1,33 @@
 from ortools.sat.python import cp_model
 from rich.text import Text
 from .util import *
-from src.core import convert2fjsp_data,Task,console
-from src.utils.common import get_agv_flags
-from src.core.parsers import Instance
+from ...utils import *
+from src.utils.crane_state import get_crane_states
+from src.core import convert2fjsp_data,Instance
 from typing import  List,Dict,Tuple
 import time
 import numpy as np
-def get_horizon(info: Instance,agv_up_time=2,agv_down_time=2):
+def get_horizon(instance: Instance,agv_up_time=2,agv_down_time=2):
     rt=0
-    for task_id in range(len(info.tasks)-1):
+    for task_id in range(len(instance.tasks)-1):
         if task_id%2==0:
-            task=info.tasks[task_id]
+            task=instance.tasks[task_id]
             rt+=task.runtime
             #print(task_id+1,task.runtime)
         else:
-            pre=info.tasks[task_id-1]
-            next=info.tasks[task_id+1]
+            pre=instance.tasks[task_id-1]
+            next=instance.tasks[task_id+1]
             #print(pre.str_info(),next.str_info())
-            m1_idxs=np.nonzero(pre.machines)[0]
-            m2_idxs=np.nonzero(next.machines)[0]
+            m1_idxs=pre.eligible_machines#np.nonzero(pre.machines)[0]
+            m2_idxs=next.eligible_machines#np.nonzero(next.machines)[0]
             #print(pre.machines,m1_idxs)
 
-            x1=info.machine_offsets[m1_idxs[0]]#上个电镀作业的第一个机器位置
-            x2=info.machine_offsets[m2_idxs[-1]]#下个电镀作业的最后一个机器位置
+            x1=instance.machine_offsets[m1_idxs[0]]#上个电镀作业的第一个机器位置
+            x2=instance.machine_offsets[m2_idxs[-1]]#下个电镀作业的最后一个机器位置
             dt=abs(x2-x1)+agv_up_time+agv_down_time# todo
             #print(x1,x2,dt)
             rt+=dt 
-    task=info.tasks[-1]#最后一个加工处理
+    task=instance.tasks[-1]#最后一个加工处理
     rt+=task.runtime
     return rt
         
@@ -41,7 +41,7 @@ class OrToolSolver:
         self.min_x, self.max_x = min(self.offsets), max(self.offsets)
         self.machines_count = len(self.offsets)
         self.jobs = convert2fjsp_data(info.tasks)
-        self.agv_start = info.first_agv_index
+        self.agv_start = info.first_crane_index
         self.agv_num = self.machines_count - self.agv_start
         self.horizon=get_horizon(info,agv_up_time,agv_down_time)
         #self.horizon = sum(task.runtime if i%2==0 else 0 for i,task in enumerate(info.jobs))
@@ -224,7 +224,7 @@ class OrToolSolver:
             agv_idx=i+self.agv_start
             ds:List[assigned_task_type]=data[agv_idx]
             ts=[(d.start,d.start+d.duration) for  d in ds]
-            rt2[i]=get_agv_flags(rt[i],ts)
+            rt2[i]=get_crane_states(rt[i],ts)
         return rt,rt2
     
     def print_info(self,info):

@@ -13,7 +13,7 @@ from torch.distributions.categorical import Categorical
 import pickle
 from typing import Tuple, Any, List
 
-from src0.utils.logger import Logger
+
 
 # constants
 POLICY_LAYER: List[int] = [256, 256]

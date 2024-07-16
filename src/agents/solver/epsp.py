@@ -50,7 +50,7 @@ def solve_epsp(info: Instance,agv_up_time=2,agv_down_time=2):
     offsets_var=[model.NewConstant(offsets[i]) for i in all_machines]
     assert len(offsets_var)==machines_count
     min_x, max_x = min(offsets), max(offsets)
-    agv_start = info.first_agv_index
+    agv_start = info.first_crane_index
     agv_num = machines_count - agv_start
     agv_steps: List[cp_model.IntVar] = [None]*agv_num*horizon #把多维数组压缩为一维数组
 

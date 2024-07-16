@@ -1,7 +1,6 @@
 from .task import Task
 from .machine import Machine
 from typing import List
-import numpy as np
 
 class Job:
     def __init__(self,index=0):
@@ -37,13 +36,7 @@ class Job:
         task.runtime=op_time
         self._cur_task_index+=1
 
-    def greedy_select(self,ms:List[Machine])->Machine:
-        op_times=np.array(self.cur_task._runtimes)
-        op_times[op_times<1]=1e10
-        for i,t in enumerate(op_times):
-            op_times[i]=t*(1+ms[i].utilization_rate(self._last_time))
-        idxs=np.argsort(op_times)
-        return ms[idxs[0]]
+
 
         
     @property 

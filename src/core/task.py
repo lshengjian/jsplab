@@ -20,12 +20,14 @@ class Task:
 
         # optional - don't touch after init
         self.runtime = 0  #没有开始前存可能的最长加工时间，开始时记录实际加工的时间
+        
         self._runtimes = [] #保存每个机器的实际加工时间
         self.machines = op_times 
         # optional
         self.time_started = -1
         self.time_finished = -1
         self.selected_machine_index = -1
+        self.done=False
 
 
     @property 
@@ -40,12 +42,13 @@ class Task:
         times=np.where(data<0,np.zeros_like(data),data)
         self._runtimes=times
         self.runtime=max(times)
+        self.eligible_machines=np.nonzero(times)[0] #only one dim
 
     def __str__(self) -> str:
         return f"J{self.job_index+1}-{self.task_index+1}|{self.runtime}"
 
     def debug_info(self) -> str:
-        m_idxs=np.nonzero(self._runtimes)[0]
+        m_idxs=self.eligible_machines
         ms=map(lambda idx:idx+1,m_idxs)
         ts=self._runtimes[m_idxs]
         data=str(list(zip(ms,ts))).replace(' ','')

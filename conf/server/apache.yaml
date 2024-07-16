@@ -1,5 +1,0 @@
-defaults:
-  - _self_
-  - db: mysql
-
-name: apache

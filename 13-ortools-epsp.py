@@ -1,8 +1,8 @@
-from src.core.parsers import  IParse,ParserExcel,ParserFjspFile,Instance
+from src.core import  IParse,ExcelFileParser
 from src.agents.solver.epsp_solver import OrToolSolver
 from src.utils.common import load_config
 if __name__ == '__main__':
-    parser:IParse=ParserExcel()
+    parser:IParse=ExcelFileParser()
     cfg=load_config('conf/demo/or-tools-solver.yaml')
     #info=parser.parse('epsp/demo/1x(3+1).xlsx')
     #info=parser.parse('epsp/demo/1x(6+2).xlsx')

@@ -1,9 +1,7 @@
 from typing import List, Tuple, Dict, Any, Union
 from numpy.typing import NDArray
 import numpy as np
-#from numpy import ndarray
 import copy
-
 from gymnasium import spaces
 import gymnasium as gym
 from src.core import Task,convert2fjsp_data
@@ -33,7 +31,7 @@ class PlateJobShopEnv(gym.Env):
         self.render_mode = render_mode
         # import data containing all instances
         self.data: List[List[Task]] = data
-        self.num_machines: int = len(self.data[0][0].machines)
+        self.num_machines: int = len(data[0][0].machines)
         # retrieve run-dependent settings from config
         self.shuffle: bool = config.get('shuffle', False)
         self.log_interval: int = config.get('log_interval', 10) 
@@ -188,8 +186,8 @@ class PlateJobShopEnv(gym.Env):
         self.task_job_mapping:Dict[Tuple[int,int],int] = {(task.job_index, task.task_index): i for i, task in enumerate(self.tasks)}
 
         # retrieve maximum deadline of the current instance
-        max_deadline = max([task.deadline for task in self.tasks])
-        self.max_deadline:int = max_deadline if max_deadline > 0 else 1
+        # max_deadline = max([task.deadline for task in self.tasks])
+        # self.max_deadline:int = max_deadline if max_deadline > 0 else 1
         action_mask = self.get_action_mask()
         return self.state_obs,{'mask': action_mask}
 

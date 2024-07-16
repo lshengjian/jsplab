@@ -2,8 +2,9 @@ from collections import namedtuple
 from typing import List
 OpInfo = namedtuple("OpInfo", "start end job_idx task_idx")
 class Machine:
-    def __init__(self,index=0):
+    def __init__(self,index=0,offset=0):
         self.index=index
+        self.offset=offset
         self.ops:List[OpInfo]=[] 
         self._last_time=0
 
