@@ -8,8 +8,8 @@ def test_read_from_excel():
     data=info.tasks
     assert 8==len(data) 
     assert 'J1-1|3'==str(data[0])
-    assert 'J1-1|3,[(1,3)]'==data[0].debug_info()
-    assert 'J1-2|2,[(2,2)]'==data[1].debug_info()
+    assert 'J1-1|3,[(1,3)]'==data[0].info()
+    assert 'J1-2|2,[(2,2)]'==data[1].info()
     assert 1==info.max_machines_per_task
 
 def test_read_jsp():

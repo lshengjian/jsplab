@@ -1,5 +1,7 @@
 from collections import defaultdict,namedtuple
+from typing import Dict,List
 from ortools.sat.python import cp_model
+
 MAX_SEARCH_TIME_IN_SECONDS=20
 
 task_type = namedtuple("task_type", "start end interval machine")
@@ -46,7 +48,7 @@ def get_assigned(jobs,all_tasks,solver,presences):
             )
     return assigned_jobs
 
-def view_solution(offsets,assigned_jobs):
+def view_solution(offsets:Dict[int,int],assigned_jobs:Dict[int,assigned_task_type]):
     print('Solution:')
     output = ''
     

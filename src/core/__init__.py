@@ -1,6 +1,6 @@
-from .machine import Machine
+#from .machine import Machine
 from .task import *
-from .job import Job
-
-from .instance import Instance,greedy_select
+from .instance import Instance,get_max_steps
 from .parsers import *
+from .crane import *
+from .shop import *

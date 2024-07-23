@@ -40,14 +40,14 @@ Add a heuristic that returns zeros (this is not a practical example!)
 import numpy as np
 from numpy.typing import NDArray
 
-from typing import List
+from typing import List,Dict
 
 from src.core import Task
 
 
-def get_active_task_dict(tasks: List[Task]) -> dict:
+def get_active_tasks(tasks: List[Task]) -> Dict[int,Task]:
     """
-    Helper function to determining the next unfinished task to be processed for each job
+    determining the next unfinished task to be processed for each job
 
     :param tasks: List of task objects, so one instance
 
@@ -56,11 +56,11 @@ def get_active_task_dict(tasks: List[Task]) -> dict:
     Would be an empty dictionary if all tasks were completed
 
     """
-    active_job_task_dict = {}
-    for task_i, task in enumerate(tasks):
-        if not task.done and task.job_index not in active_job_task_dict.keys():
-            active_job_task_dict[task.job_index] = task_i
-    return active_job_task_dict
+    rt = {}
+    for idx, task in enumerate(tasks):
+        if not task.done and task.job_index not in rt.keys():
+            rt[task.job_index] = task
+    return rt
 
 
 def edd(tasks: List[Task], action_mask: NDArray) -> int:
@@ -104,7 +104,7 @@ def spt(tasks: List[Task], action_mask: NDArray) -> int:
     else:
         num_jobs = action_mask.shape[0] - 1
         runtimes = np.full(num_jobs + 1, np.inf)
-        active_task_dict = get_active_task_dict(tasks)
+        active_task_dict = get_active_tasks(tasks)
 
         for i in range(num_jobs):
             if i in active_task_dict.keys():
@@ -129,7 +129,7 @@ def mtr(tasks: List[Task], action_mask: NDArray) -> int:
         chosen_job = np.argmax(action_mask)
     else:
         tasks_done = np.zeros(len(tasks) + 1)
-        next_tasks = get_active_task_dict(tasks)#未完工的job的下个任务的全局索引。 key:job_idx,value:task_idx
+        next_tasks = get_active_tasks(tasks)#未完工的job的下个任务的全局索引。 key:job_idx,value:task_idx
         for _, task in enumerate(tasks):
             if task.done and task.job_index in next_tasks.keys():
                 #tasks_done[next_tasks[task.job_index]] += 1
@@ -160,7 +160,7 @@ def ltr(tasks: List[Task], action_mask: np.array) -> int:
         chosen_job = np.argmax(action_mask)
     else:
         tasks_done = np.zeros(len(tasks) + 1)
-        possible_tasks = get_active_task_dict(tasks)
+        possible_tasks = get_active_tasks(tasks)
         for _, task in enumerate(tasks):
             if task.done and task.job_index in possible_tasks.keys():
                 tasks_done[possible_tasks[task.job_index]] += 1

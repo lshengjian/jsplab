@@ -119,7 +119,7 @@ class Env(gym.Env):
             np.random.shuffle(self.tasks)
         # for t in self.tasks:
         #     print(t)
-        self.task_job_mapping = {(task.job_index, task.task_index): i for i, task in enumerate(self.tasks)}
+        self.task_job_mapping = {(task.job_index, task.index): i for i, task in enumerate(self.tasks)}
 
         # retrieve maximum deadline of the current instance
         max_deadline = max([task.deadline for task in self.tasks])
@@ -174,8 +174,8 @@ class Env(gym.Env):
         for task in self.data[0]:
             if task.job_index>num_jobs:
                 num_jobs=task.job_index
-            if task.task_index>num_tasks:
-                num_tasks=task.task_index
+            if task.index>num_tasks:
+                num_tasks=task.index
             if task.runtime!=None and task.runtime>max_runtime:
                 max_runtime=task.runtime
             if task.deadline!=None and task.deadline>max_deadline:
@@ -296,10 +296,10 @@ class Env(gym.Env):
 
         """
         # check task preceding in the job (if it is not the first task within the job)
-        if task.task_index == 0:
+        if task.index == 0:
             start_time_of_preceding_task = 0
         else:
-            preceding_task = self.tasks[self.task_job_mapping[(job_id, task.task_index - 1)]]
+            preceding_task = self.tasks[self.task_job_mapping[(job_id, task.index - 1)]]
             start_time_of_preceding_task = preceding_task.finished
 
 
@@ -315,7 +315,7 @@ class Env(gym.Env):
         # update job and task
         task.time_started = start_time
         task.time_finished = end_time
-        task.selected_machine_index = machine_id
+        task.selected_machine = machine_id
         task.done = True
 
     def compute_reward(self) -> Any:

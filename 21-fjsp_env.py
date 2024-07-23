@@ -1,5 +1,5 @@
 from src.core import  IParse,StandardFjspFileParser
-from src.envs.fjsp_env import FlexJobShopEnv
+from src.envs.fjsp import FlexJobShopEnv
 from src.agents.solver.fjsp import solve_fjsp 
 import numpy as np
 

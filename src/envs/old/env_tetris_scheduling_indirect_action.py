@@ -140,7 +140,7 @@ class IndirectActionEnv(Env):
         self.tasks = copy.deepcopy(self.data[self.data_idx])
         if self.shuffle:
             np.random.shuffle(self.tasks)
-        self.task_job_mapping = {(task.job_index, task.task_index): i for i, task in enumerate(self.tasks)}
+        self.task_job_mapping = {(task.job_index, task.index): i for i, task in enumerate(self.tasks)}
 
         # retrieve maximum deadline of the current instance
         max_deadline = max([task.deadline for task in self.tasks])
@@ -179,7 +179,7 @@ class IndirectActionEnv(Env):
             if not task.done:
                 remaining_processing_times_on_machines[np.argwhere(task.machines)] += task.runtime
                 remaining_processing_times_per_job[task.job_index] += task.runtime
-                if task.task_index == next_tasks[task.job_index]:  # next task of the job
+                if task.index == next_tasks[task.job_index]:  # next task of the job
                     operation_time_of_next_task_per_job[task.job_index] += task.runtime
                     machines_for_next_task_per_job[task.job_index] = task.machines
 

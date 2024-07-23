@@ -16,14 +16,14 @@ class IParse(ABC):
 
     def debug(self,info:Instance):
         for task in info.tasks:
-            print(task.debug_info())
+            print(task.info())
 
 class ExcelFileParser(IParse):
     def parse(self,fname:str)->Instance:
         fp=Path(__file__).parent.parent.parent/('data/'+ fname)
         name=fp.stem
         tasks:List[Task]=[]
-        offsets:List[Task]=[]
+        offsets:List[int]=[]
         df=pd.read_excel(fp,sheet_name="OpTime")
         machines=df.columns[1:].to_list()
         machine_names=[]
@@ -40,15 +40,25 @@ class ExcelFileParser(IParse):
                 offsets.append(i)
         data=df.to_numpy()
         task_idxs:Dict[int,int] =defaultdict(int)
+        first_agv_idx=None if len(agv_idxs)==0 else min(agv_idxs)
         for row in data:
             job_idx=int(row[0])-1
             task_idx=task_idxs[job_idx]
             task_idxs[job_idx]+=1
-            ms=row[1:] 
+            ms=row[1:].copy()
+            if first_agv_idx!=None:
+                ms[first_agv_idx:]=0
             #idx=np.argmax(ms)
-            task=Task(job_idx,task_idx,op_times=ms)
-            tasks.append(task)
-        first_agv_idx=None if len(agv_idxs)==0 else min(agv_idxs)
+            task1=Task(job_idx,task_idx,op_times=ms)
+            tasks.append(task1)
+            if first_agv_idx!=None:
+                agvs=row[1:].copy()
+                agvs[:first_agv_idx]=0
+                if sum(agvs)>0:
+                    task2=Task(job_idx,task_idx+1,op_times=agvs)
+                    task_idxs[job_idx]+=1
+                    tasks.append(task2)
+        
         return Instance(name,tasks,offsets,machine_names,first_agv_idx)
 
 

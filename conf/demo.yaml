@@ -1,0 +1,6 @@
+data1:
+  delay: 0.3
+  msg: hello world
+
+data2:
+  seq: [1,2,3]

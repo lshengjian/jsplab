@@ -1,17 +1,15 @@
 from .task import Task,OpTime,convert2fjsp_data
-from .machine import Machine
-from .job import Job
 from typing import List,Tuple
 from collections import defaultdict
 import numpy as np
 
-def greedy_select(job:Job,ms:List[Machine]):
-    op_times=np.array(job.cur_task._runtimes)
-    op_times[op_times<1]=1e10
-    for i,t in enumerate(op_times):
-        op_times[i]=t*(1+ms[i].utilization_rate(job._last_time))
-    idxs=np.argsort(op_times)
-    job.assign(ms[idxs[0]])
+# def greedy_select(job:Job,ms:List[Machine]):
+#     op_times=np.array(job.cur_task._runtimes)
+#     op_times[op_times<1]=1e10
+#     for i,t in enumerate(op_times):
+#         op_times[i]=t*(1+ms[i].utilization_rate(job._last_time))
+#     idxs=np.argsort(op_times)
+#     job.assign(ms[idxs[0]])
 
 class Instance:
     def __init__(self,name='',tasks:List[Task]=[], \
@@ -24,27 +22,27 @@ class Instance:
         self.machine_names=machine_names
         if len(machine_names)<1:
             for m in range(len(self.machine_offsets)):
-                self.machine_offsets.append(f'M{m+1}')
+                self.machine_names.append(f'M{m+1}')
         else:
             assert len(machine_names)==len(offsets)
 
         self.first_crane_index:int=first_crane_index
         self.setup()
     
-    @property 
-    def world(self)->Tuple[List[Machine],List[Job]]:
-        ms:List[Machine]=[]
-        for m_id in range(self.num_machines):
-            ms.append(Machine(m_id,self.machine_offsets[m_id]))
+    # @property 
+    # def world(self)->Tuple[List[Machine],List[Job]]:
+    #     ms:List[Machine]=[]
+    #     for m_id in range(self.num_machines):
+    #         ms.append(Machine(m_id,self.machine_offsets[m_id]))
 
-        job_dict={}
-        for task in self.tasks:
-            job=job_dict.get(task.job_index,None)
-            if (job is None):
-                job=Job(task.job_index)
-                job_dict[job.index]=job
-            job.add_task(task)
-        return ms,job_dict.values()
+    #     job_dict={}
+    #     for task in self.tasks:
+    #         job=job_dict.get(task.job_index,None)
+    #         if (job is None):
+    #             job=Job(task.job_index)
+    #             job_dict[job.index]=job
+    #         job.add_task(task)
+    #     return ms,job_dict.values()
     
 
 
@@ -55,7 +53,7 @@ class Instance:
         max_alt_machines=0
         op_times=defaultdict(list)
         num_tasks_job={}
-        machines=list(range(self.num_machines))
+        #machines=list(range(self.num_machines))
         for j,job in enumerate(data):
             num_tasks_job[j]=0
             for t,task in enumerate(job):
@@ -88,3 +86,25 @@ class Instance:
         
     def __str__(self) -> str:
         return f'{self.name}|{self.machine_offsets}|{self.first_crane_index}'
+    
+def get_max_steps(instance: Instance,crane_up_time=2,crane_down_time=2,scale=1):
+    rt=0
+    for task_id in range(len(instance.tasks)-1):
+        if task_id%2==0:#加工型
+            task=instance.tasks[task_id]
+            rt+=task.runtime
+            #print(task_id+1,task.runtime)
+        else:
+            pre=instance.tasks[task_id-1]
+            next=instance.tasks[task_id+1]
+            
+            m1_idxs=pre.eligible_machines
+            m2_idxs=next.eligible_machines
+
+            x1=instance.machine_offsets[m1_idxs[0]]#上个电镀作业的第一个机器位置
+            x2=instance.machine_offsets[m2_idxs[-1]]#下个电镀作业的最后一个机器位置
+            dt=abs(x2-x1)+crane_up_time+crane_down_time# todo
+            rt+=dt 
+    task=instance.tasks[-1]#最后一个加工处理
+    rt+=task.runtime
+    return round(rt*scale)

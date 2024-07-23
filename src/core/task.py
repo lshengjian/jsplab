@@ -16,7 +16,7 @@ class Task:
             raise TypeError("Job index and task index must be of type int.")
         # required - don't touch after init
         self.job_index = job_index #作业索引号，从0开始
-        self.task_index = task_index #任务索引号，从0开始
+        self.index = task_index #任务索引号，从0开始
 
         # optional - don't touch after init
         self.runtime = 0  #没有开始前存可能的最长加工时间，开始时记录实际加工的时间
@@ -26,7 +26,7 @@ class Task:
         # optional
         self.time_started = -1
         self.time_finished = -1
-        self.selected_machine_index = -1
+        self.selected_machine = -1
         self.done=False
 
 
@@ -43,16 +43,21 @@ class Task:
         self._runtimes=times
         self.runtime=max(times)
         self.eligible_machines=np.nonzero(times)[0] #only one dim
+        #np.argwhere(times>0).flatten()
 
     def __str__(self) -> str:
-        return f"J{self.job_index+1}-{self.task_index+1}|{self.runtime}"
+        tag=f'J{self.job_index+1}-{self.index+1}|'
+        msg1=f'{tag}{self.runtime}'
+        msg2=f'{tag}{self.time_started}->{self.time_finished}'
 
-    def debug_info(self) -> str:
+        return msg2 if self.done else msg1
+
+    def info(self) -> str:
         m_idxs=self.eligible_machines
         ms=map(lambda idx:idx+1,m_idxs)
         ts=self._runtimes[m_idxs]
         data=str(list(zip(ms,ts))).replace(' ','')
-        return f"J{self.job_index+1}-{self.task_index+1}|{self.runtime:.0f},{data}"
+        return f"J{self.job_index+1}-{self.index+1}|{self.runtime:.0f},{data}"
 
 def instance2dict(instance:List[Task])->Dict[int,List[List[OpTime]]]:
     job_data=defaultdict(list)
@@ -62,7 +67,7 @@ def instance2dict(instance:List[Task])->Dict[int,List[List[OpTime]]]:
         times=task._runtimes
         m_idxs=np.nonzero(times)[0]
         for idx in m_idxs:
-            task_data[task.job_index,task.task_index].append(OpTime(idx,times[idx]))
+            task_data[task.job_index,task.index].append(OpTime(idx,times[idx]))
    
     for j_idx,t_idx  in  task_data.keys():
         job_data[j_idx].append(task_data[j_idx,t_idx])

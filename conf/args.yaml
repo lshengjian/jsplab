@@ -1,0 +1,31 @@
+max_steps: 3000
+cool_down_time: 40
+auto_put_starts: false
+auto_dispatch_crane: true
+observation_image: false
+data_directory: test03
+
+alarm:
+  short_time: 8 #超出此时间后告警
+  long_time: 20  #超出此时间后失败
+
+products:
+  test01:
+    - code: A
+      num: 3
+  test02:
+    - code: A
+      num: 2
+    - code: B
+      num: 2
+  test03:
+    - code: A
+      num: 3
+    - code: B
+      num: 3
+#max_x: 32  #加工槽逻辑上排成一排，最远的偏移是多少个单元格
+
+fps: 60
+tile_size: 48      # 绘图单位方格的像数值
+screen_columns: 20 # 屏幕有多少列单位方格
+

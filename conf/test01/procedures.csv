@@ -1,0 +1,4 @@
+product_code,op_key,wait_time,op_time,drop_time
+A,上料,0,0,0
+A,水洗,3,30,1
+A,下料,0,0,0
