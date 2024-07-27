@@ -6,11 +6,12 @@ if __name__ == '__main__':
     cfg=load_config('conf/or-tools-solver.yaml')
     #info=parser.parse('epsp/demo/1x(3+1).xlsx')
     #info=parser.parse('epsp/demo/1x(6+2).xlsx')
-    #info=parser.parse('epsp/demo/2x(4+2).xlsx')
-    info=parser.parse('epsp/demo/2x(3+1).xlsx')
+    info=parser.parse('epsp/demo/2x(4+2).xlsx')
+    #info=parser.parse('epsp/demo/2x(3+1).xlsx')
     #parser.debug(info)
     solver=OrToolSolver(info,2,2,1.6)
-    solver.optimize(**cfg)
+    data=solver.optimize(**cfg)
+    print('\n',list(data))
 
 
 

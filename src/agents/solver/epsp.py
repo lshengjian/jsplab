@@ -137,6 +137,13 @@ class OrToolSolver:
             self.replay(solver,data,pause_time)
         else:
             print("Not found solution!")
+        tasks=[]
+        for ds in data.values():
+            tasks.extend(ds)
+        tasks.sort()
+        rt=map(lambda task:(task.job,task.machine) ,tasks)
+        return rt
+ 
 
     def check_agv(self, machine_usage,all_tasks, job_id, task_id, alt, \
                 duration_var,alt_duration, alt_start):

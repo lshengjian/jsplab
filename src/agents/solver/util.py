@@ -74,3 +74,6 @@ def view_solution(offsets:Dict[int,int],assigned_jobs:Dict[int,assigned_task_typ
         output += sol_line
    
     print(output)
+
+    
+

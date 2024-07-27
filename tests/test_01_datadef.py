@@ -2,7 +2,7 @@ from src.utils import get_dataclass_by_name
 from omegaconf import OmegaConf
 from dataclasses import asdict
 from pathlib import Path
-from src.datadef.constant import Constant
+from src.datadef import G
 def test_read_data_from_yaml():
     path=Path(__file__).parent.parent/"conf/demo.yaml"
     config = OmegaConf.load(path)
@@ -16,8 +16,6 @@ def test_read_data_from_yaml():
     assert {'seq': [1, 2, 3]}==asdict(my_data_instance)
 
 def test_read_global_data():
-    config = OmegaConf.load("conf/constant.yaml")
-    D1=get_dataclass_by_name('Constant')
-    # 将配置文件中的字典转换为数据类的实例
-    g: Constant= D1(**config)
-    assert 1e-8==g.EPS
+    assert 12==G.FPS
+    assert 1e-8==G.EPS
+    assert 1.0==G.CRANE_VELOCITY[0] and 1.0==G.CRANE_VELOCITY[1]

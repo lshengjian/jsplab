@@ -19,6 +19,9 @@ class Instance:
         self.name:str=name
         self.tasks:List[Task]=tasks
         self.machine_offsets:List[int]=offsets
+        self.min_offset=min(offsets)
+        self.max_offset=max(offsets)
+
         self.machine_names=machine_names
         if len(machine_names)<1:
             for m in range(len(self.machine_offsets)):

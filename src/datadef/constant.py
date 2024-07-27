@@ -1,13 +1,23 @@
+from src.utils import get_dataclass_by_name
+from omegaconf import OmegaConf
+from typing import List
 from dataclasses import dataclass
-
+import logging,yaml
+import logging.config
 @dataclass
 class Constant:
+    FPS:int 
+    EPS:float
+    CRANE_HEIGHT:int #天车高度
+    CRANE_SAFE_DISTANCE:int #天车安全距离
+    CRANE_VELOCITY:List[float] #天车默认移动速度
+    '''
     WINDOW_TITLE:str='title'
     TILE_SIZE:int=48
     COLS_TILE:int=16
     ROWS_TEXT:int= 1
     ROWS_TILE:int= 3
-    FPS:int= 12
+    
     DRAW_TEXT:bool=True
     DISPATCH_CODE:str='DP'
 
@@ -32,6 +42,13 @@ class Constant:
     SHORT_ALARM_TIME:int=3
     LONG_ALARM_TIME:int=20
 
-    EPS:float=1e-8
-    #AUTO_DISPATCH:bool=False
     OBSERVATION_IMAGE:bool=False
+    '''
+
+# 将配置文件中的字典转换为数据类的实例
+G: Constant= get_dataclass_by_name('Constant')(**OmegaConf.load("conf/constant.yaml"))
+
+# with open(file="conf/logging.yaml", mode='r', encoding="utf-8") as file:
+#     logging_yaml = yaml.load(stream=file, Loader=yaml.FullLoader)
+#     logging.config.dictConfig(config=logging_yaml)
+#     logger = logging.getLogger(__name__.split('.')[-1])

@@ -22,18 +22,10 @@ handlers:
     backupCount: 3
 
 loggers:
-    config:
-        level: INFO
-        handlers: [file]
-        propagate: no 
-    world:
-        level: INFO
-        handlers: [file,console]
-        propagate: no 
-    cranehelper:
-        level: INFO
-        handlers: [file]
-        propagate: no         
+    # machine:
+    #     level: INFO
+    #     handlers: [file]
+    #     propagate: no         
 root:
-    level: ERROR
+    level: DEBUG
     handlers: [console]

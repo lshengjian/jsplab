@@ -5,9 +5,18 @@ import copy
 from collections import defaultdict
 from gymnasium import spaces
 import gymnasium as gym
-from src.core import Task,convert2fjsp_data,OverHeadCrane,JobShop
+from src.core import Instance,get_max_steps,Task,convert2fjsp_data,OverHeadCrane,JobShop
+from src.core.crane_state import make_crane_states
+from src.utils import console
+from rich.text import Text
+import time
+from ..core import JobShop
+NUM_SPACE=5
+def print_info(info):
+    console.print('',end='\r')
+    for s in info:
+        console.print(s,end='')
 
-EPS=1e-10
 class ElectroplateJobShopEnv(gym.Env):
     """
     Scheduling environment for secheduling optimization according to
@@ -28,35 +37,35 @@ class ElectroplateJobShopEnv(gym.Env):
     :param data: Scheduling problem to be solved, so a list of instances
 
     """
-    def __init__(self, args: Dict, data: List[List[Task]],render_mode=None):
+    EPS=1e-10
+    #def __init__(self, ins: Instance, data: List[List[Task]],render_mode=None,max_steps=30,safe_distance=2):
+    def __init__(self,shop:JobShop,render_mode=None):
         self.render_mode = render_mode
-        # import data containing all instances
-        self.batch_data: List[List[Task]] = data
-        self.first_crane_index=args.get('first_crane_index', 999)
-        self.machine_names:List[str]=args.get('machine_names', [])
-        self.num_machines: int = len(self.batch_data[0][0].machines)
-        self.max_machines_per_task=0
-        self.machine_offsets: Any = args.get('machine_offsets', [])
 
-        self.cranes:Dict[OverHeadCrane]={}
-        for i in range(self.first_crane_index,self.num_machines):
-            self.cranes[i]=OverHeadCrane(i,self.machine_offsets[i],self.machine_names[i])
-        self.js=JobShop(self.cranes.values())
+        #self.batch_data: List[List[Task]] = data
+        # self.first_crane_index=ins.first_crane_index 
+        # self.machine_names:List[str]=ins.machine_names
+        # self.num_machines: int = ins.num_machines
+        # self.max_machines_per_task=ins.max_machines_per_task
+        # self.machine_offsets: Any = ins.machine_offsets
+
+        self.shop=shop
         # retrieve run-dependent settings from config
-        self.shuffle: bool = args.get('shuffle', False)
-        self.log_interval: int = args.get('log_interval', 10) 
+        self.shuffle: bool =True
+        self.log_interval: int =10
         #self.iterations_over_data = -1 
         self.runs: int = -2  # counts runs (episodes/dones).  because reset is called twice before start    
         self.data_idx: int = 0  
         # reward parameters
-        self.reward_strategy = args.get('reward_strategy', 'dense_makespan_reward')
-        self.reward_scale = args.get('reward_scale', 1)
+        self.reward_strategy = 'dense_makespan_reward'
+        self.reward_scale =  1
         self.mr2_reward_buffer: List[List] = [[] for _ in range(len(data))]  # needed for m2r reward only
 
-        self.set_instance_info()
-        self.machine_tasks:Dict[int,List[Task]]=defaultdict(list)
+        #self.set_instance_info()
+        #self.machine_tasks:Dict[int,List[Task]]=defaultdict(list)
+        #self.job_tasks:Dict[int,List[Task]]=defaultdict(list)
         
-        self.num_steps_max: int = args.get('num_steps_max', self.max_num_jobs * self.max_num_tasks*2)
+        #self.num_steps_max: int = get_max_steps(ins,2,2,1.6)
         self._state_obs: NDArray = self.reset()[0]
         # training info log updated after each "epoch" over all training data
         self.action_history: List = []  # stores the sequence of tasks taken
@@ -65,14 +74,62 @@ class ElectroplateJobShopEnv(gym.Env):
         self.episodes_rewards: List = []
         self.episodes_makespans: List = []
 
-        
-
-
         self.action_space: spaces.Discrete = spaces.Discrete(self.max_num_jobs*self.max_machines_per_task) 
         # overwrite observation space
         observation_shape = np.array(self.state_obs).shape
         self.observation_space: spaces.Box = spaces.Box(low=0, high=1, shape=observation_shape)
-    
+    def debug(self):
+        for m,ts in self.machine_tasks.items():
+            name=self.machine_names[m]
+            offset=self.machine_offsets[m]
+            print(f'{name}[{offset}]:',end='')
+            for task in ts:
+                print(f'{task}',end=' ')
+            print()
+
+    def replay(self,pause_time:int):
+        data=[]
+        steps=self.makespan
+        for m_id,agv in self.shop.machines.items():
+            tasks=self.machine_tasks[m_id]
+            moves=[]
+            for task in tasks:
+                moves.append((task.time_started,task.time_finished))
+            flags=make_crane_states(agv.pos,moves,2,2)
+            flags=list(map(str,flags))
+            data.append((agv.pos,flags))
+        x1=self.instance.min_offset
+        x2=self.instance.max_offset
+        offsets=self.instance.machine_offsets
+        agv_start=self.instance.first_crane_index 
+        info=[Text(f'{i:^4d}', style="bold yellow") for i in range(x1,x2+1)]
+        print_info(info)
+        console.print()
+        for t in range(steps):
+            m_id=' '
+            info=[Text(f'{m_id:^{NUM_SPACE}s}')]*(x2-x1+1)
+            #assert len(info)==self.max_x-self.min_x+1
+            
+            # for i,x in enumerate(offsets):
+            #     if i>=agv_start:
+            #         continue
+            #     m_id=self.instance.machine_names[i]
+            #     info[x]=Text(f'{m_id:<{NUM_SPACE}s}', style="bold green")
+            #console.print(f'\r{info}',end='')
+
+            for i,agv in enumerate(data):
+                x=agv[0][t]
+                dir=agv[1][t]
+                m_id=f'{i+1}{dir}'
+                info[x]=Text(f'{m_id:<{NUM_SPACE}s}', style="red")
+            # for j_id in range(self.instance.num_jobs):
+            #     x=self.shop.get_job_pos(t,j_id,self.tasks)
+            #     if x>=0:
+            #         m_id=f'J{j_id+1}'
+            #         info[x]=Text(f'{m_id:<{NUM_SPACE}s}', style="yellow")
+            print_info(info)
+            time.sleep(pause_time) 
+
     def set_instance_info(self):
         """
         Retrieves info about the instance size and configuration from an instance sample
@@ -116,45 +173,25 @@ class ElectroplateJobShopEnv(gym.Env):
         # transform and store action
         #job_id=action//self.max_machines_per_task
         #machine_idx=action%self.max_machines_per_task #只是加工任务
-        job_id=action
-        selected_job_vector = self.to_one_hot(job_id, self.max_num_jobs)
+        job_id=action #天车任务
+        #selected_job_vector = self.to_one_hot(job_id, self.max_num_jobs)
         self.action_history.append(action)
-        _, selected_task = self.get_selected_task(job_id)
+        op_task, agv_task = self.get_cur_tasks(job_id)
         # size=len(selected_task.eligible_machines)
         # machine_id=selected_task.eligible_machines[machine_idx%size]#self.choose_machine(selected_task)
-        machine_id=self.choose_machine(selected_task)
-
-        # check if the action is valid/executable
-        if self.check_valid_job_action(selected_job_vector, self.last_mask):
-            # if the action is valid/executable/schedulable
-            cur_job_task_index=selected_task.index
-            # selected_machine = self.choose_machine(selected_task)
-            if cur_job_task_index>0:#不是第一个上料工序
-                agv_task_index=self.task_job_mapping[(job_id,cur_job_task_index)]
-                agv_task=self.tasks[agv_task_index]
-                pre_op_task_idx = self.task_job_mapping[(job_id,cur_job_task_index-1)]
-                pre_op_task = self.tasks[pre_op_task_idx]
-                next_op_task_idx = self.task_job_mapping[(job_id,cur_job_task_index+1)]
-                next_op_task = self.tasks[next_op_task_idx]
-                agv_id=machine_id
-
-                agv=self.cranes[machine_id]
-                
-
-                x1=self.machine_offsets[pre_op_task.selected_machine]
-                machine_id=self.choose_machine(next_op_task)
-                x2=self.machine_offsets[machine_id]
-  
-                
-                self.execute_action(job_id, agv_task, agv_id,agv,x1,x2)
-                selected_task=next_op_task
-                #self.offsets[next_op_task.eligible_machines[agv_index]]
-            self.execute_action(job_id, selected_task, machine_id)
-
-            
-        else:
-            # if the action is not valid/executable/scheduable
-            print('invalid action:',action)
+        machine_id=self.choose_machine(op_task)
+        
+        self.execute_action(job_id, op_task, machine_id)
+        if agv_task!=None:
+            next_op_task_idx = self.task_job_mapping[(job_id,agv_task.index+1)]
+            next_op_task = self.tasks[next_op_task_idx]
+            agv_id=self.choose_machine(agv_task)
+            agv=self.shop.machines[agv_id]
+            x1=self.machine_offsets[machine_id]
+            #dis=abs(agv.offset-x1)
+            machine_id=self.choose_machine(next_op_task)
+            x2=self.machine_offsets[machine_id]
+            self.execute_action(job_id, agv_task, agv_id,agv,x1,x2)
 
         # update variables and track reward
         action_mask = self.get_action_mask()
@@ -173,8 +210,8 @@ class ElectroplateJobShopEnv(gym.Env):
 
         self.num_steps += 1
         time_out=self.num_steps == self.num_steps_max
-        if not self.js.is_safe(self.get_makespan()):
-            done=True
+        if not self.shop.is_safe(self.get_makespan()):
+            time_out=True
             reward=-10
         return observation, reward, done, time_out ,infos
 
@@ -192,6 +229,7 @@ class ElectroplateJobShopEnv(gym.Env):
         self.runs += 1
         self.num_steps=0
         self.machine_tasks.clear()
+        #self.job_tasks.clear()
         # clear episode rewards after all training data has passed once. Stores info across runs.
         if self.data_idx == 0:
             self.episodes_makespans, self.episodes_rewards = ([], [])
@@ -340,13 +378,10 @@ class ElectroplateJobShopEnv(gym.Env):
         machine_times = np.where(possible_machines,
                                  self.ends_of_machine_occupancies,
                                  np.full(len(possible_machines), np.inf))
-        m_id= int(np.argmin(machine_times))
-        # for idx,id in enumerate(task.eligible_machines):
-        #     if id==m_id:
-        #         return idx
-        return m_id
+
+        return int(np.argmin(machine_times))
     
-    def execute_action(self, job_id: int, task: Task, machine_id: int,agv:OverHeadCrane=None,x1:int=-1,x2:int=-1) -> bool:
+    def execute_action(self, job_id: int, task: Task, machine_id: int,agv:OverHeadCrane=None,x1:int=-1,x2:int=-1,start=0) -> bool:
         """
         This Function executes a valid action
         - set machine
@@ -369,14 +404,17 @@ class ElectroplateJobShopEnv(gym.Env):
         else:
             preceding_task = self.tasks[self.task_job_mapping[(job_id, task.index - 1)]]
             start_time_of_preceding_task = preceding_task.time_finished
+            if agv is not None and task.index>1:
+                start_time_of_preceding_task=preceding_task.time_started
 
         
         task.selected_machine = machine_id
         #x0=agv.offset
         
-        start_time = max(start_time_of_preceding_task, self.ends_of_machine_occupancies[machine_id])
+        start_time = max(start,start_time_of_preceding_task, self.ends_of_machine_occupancies[machine_id])
         if agv!=None:
-            dt=agv.move(start_time,x1,x2)
+            dt=agv.move(x1,x2,start_time)
+            #print(f'move:{x1}->{x2} at time:{start_time}')
         else:
             dt=task._runtimes[machine_id]
         task.runtime=dt
@@ -390,22 +428,23 @@ class ElectroplateJobShopEnv(gym.Env):
         
         task.done = True
         self.machine_tasks[machine_id].append(task)
-        #print(task,task.selected_machine,self.get_makespan())
+        #self.job_tasks[job_id].append(task)
+        #print(f'{task} {self.instance.machine_names[machine_id]}')
         return True
 
 
-    def get_selected_task(self, job_idx: int) -> Tuple[int, Task]:
-        """
-        Helper Function to get the selected task (next possible task) only by the job index
+    def get_cur_tasks(self, job_idx: int) -> Tuple:
+        cur_task_idx=self.job_task_state[job_idx]
+        task_idx = self.task_job_mapping[(job_idx,cur_task_idx )]
+        op_task:Task = self.tasks[task_idx]
+        agv_task=None 
+        if not op_task.is_last:
+           task_idx = self.task_job_mapping[(job_idx,cur_task_idx+1)]  
+           agv_task=self.tasks[task_idx]
+           #print('op task',op_task)
+ 
 
-        :param job_idx: job index
-
-        :return: Index of the task in the task list and the selected task
-
-        """
-        task_idx = self.task_job_mapping[(job_idx, self.job_task_state[job_idx])]
-        selected_task = self.tasks[task_idx]
-        return task_idx, selected_task
+        return op_task, agv_task
     
     def sparse_makespan_reward(self) -> int:
         """

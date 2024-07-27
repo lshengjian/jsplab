@@ -17,6 +17,7 @@ class Task:
         # required - don't touch after init
         self.job_index = job_index #作业索引号，从0开始
         self.index = task_index #任务索引号，从0开始
+        self.is_last=False
 
         # optional - don't touch after init
         self.runtime = 0  #没有开始前存可能的最长加工时间，开始时记录实际加工的时间
@@ -57,6 +58,7 @@ class Task:
         ms=map(lambda idx:idx+1,m_idxs)
         ts=self._runtimes[m_idxs]
         data=str(list(zip(ms,ts))).replace(' ','')
+        #flag='Y' if self.is_last else 'X'
         return f"J{self.job_index+1}-{self.index+1}|{self.runtime:.0f},{data}"
 
 def instance2dict(instance:List[Task])->Dict[int,List[List[OpTime]]]:

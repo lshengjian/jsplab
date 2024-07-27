@@ -41,8 +41,13 @@ class ExcelFileParser(IParse):
         data=df.to_numpy()
         task_idxs:Dict[int,int] =defaultdict(int)
         first_agv_idx=None if len(agv_idxs)==0 else min(agv_idxs)
+        last_job_idx=0
         for row in data:
             job_idx=int(row[0])-1
+            if last_job_idx!=job_idx:
+                last_task=tasks[-1]
+                last_job_idx=job_idx
+                last_task.is_last=True
             task_idx=task_idxs[job_idx]
             task_idxs[job_idx]+=1
             ms=row[1:].copy()
@@ -58,6 +63,8 @@ class ExcelFileParser(IParse):
                     task2=Task(job_idx,task_idx+1,op_times=agvs)
                     task_idxs[job_idx]+=1
                     tasks.append(task2)
+        last_task=tasks[-1]
+        last_task.is_last=True
         
         return Instance(name,tasks,offsets,machine_names,first_agv_idx)
 
