@@ -28,9 +28,11 @@ class OverHeadCrane(Machine):
 
     def __init__(self,index=0,offset=0,name='',max_steps=30,up_time=None,down_time=None):
         super().__init__(index,offset,name)
+        self._observers = []
         self.MAX_STEPS=max_steps
         self.UP_TIME=round(G.CRANE_HEIGHT/G.CRANE_VELOCITY[1]) if up_time is None else up_time
         self.DOWN_TIME=self.UP_TIME if down_time is None else down_time
+        #self.offset_before_move:int =None
         self.reset()
     
     @property
@@ -40,10 +42,30 @@ class OverHeadCrane(Machine):
     @offset.setter 
     def offset(self,val):
         self.pos[self.last_time:]=val 
+    def add_subscriber(self, observer):
+        if observer not in self._observers:
+            self._observers.append(observer)
+
+    def remove_subscriber(self, observer):
+        try:
+            self._observers.remove(observer)
+        except ValueError:
+            pass
+
+    def notify(self,event:Event):
+        event.sender=self
+        event.time_step=self.last_time
+        for observer in self._observers:
+            #logger.debug(event)
+            observer.update(event)
+
+
+
 
     def reset(self):
         self.last_time=0 
-        self.avoids:Dict[int,AvoidCommand]=SortedDict()
+        self._observers.clear()
+        #self.avoids:Dict[int,AvoidCommand]=SortedDict()
         self.pos=np.array([self._offset]*self.MAX_STEPS,dtype=int)
     
     def push_away(self,event:PushAway):
@@ -60,14 +82,9 @@ class OverHeadCrane(Machine):
             
 
 
-
-
     def update(self,event:Event):
         if  isinstance(event,PushAway):
             self.push_away(event)
-
-    
-
 
            
     def debug(self):
@@ -80,7 +97,8 @@ class OverHeadCrane(Machine):
         print()
 
     
-    def move(self,x1:int,x2:int,start_time:int=None)->Tuple[int,int]:
+    def move(self,x1:int,x2:int,start_time:int=None)->Tuple[int]:
+        #self.offset_before_move=self.offset
         if start_time is None:
             start_time=self.last_time
         start_time=min(start_time,self.last_time)
@@ -110,8 +128,8 @@ class OverHeadCrane(Machine):
 
         self.pos[self.last_time:]=self.pos[self.last_time]
         t3=self.last_time
-        logger.debug(f'{self} move {x0}->{x1}->{x2} time:{t3-t1}')
-        return t3-t1,t2
+        logger.debug(f'{self} move {x0}->{x1}:{t2-t1} {x1}->{x2}:{t3-t2}')
+        return t2-t1,t3-t2
 
     def move_step(self, dir):
         x=self.offset

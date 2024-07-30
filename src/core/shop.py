@@ -1,27 +1,34 @@
 
 from __future__ import annotations
 from typing import  List,Dict
-from .machine import Machine,Tank
+from .machine import Machine,Tank,Transfer
 from .crane import OverHeadCrane
 from .instance import Instance
-from .task import Task
+from .task import Task,extend_tasks
 from collections import defaultdict
 from .job import Job
+import numpy as np
 class JobShop:
-    def __init__(self,ins:Instance,max_steps=30,safe_distance=2):
+    def __init__(self,ins:Instance,max_steps=30,safe_distance=2,job_nums_dict={},):
         # config = OmegaConf.load("conf/constant.yaml")
         # self.args:Constant = get_dataclass_by_name('Constant')(**config)
         self.instance:Instance =ins  
           
         self.safe_distance=safe_distance 
         self.machines:Dict[int,Machine]={}
+        self.cranes:List[OverHeadCrane]=[]
         self.jobs:Dict[int,Job]={}
         for i in range(ins.num_machines):
             if i<ins.first_crane_index:
                 self.machines[i]=Tank(i,ins.machine_offsets[i],ins.machine_names[i])
             else:
-                self.machines[i]=OverHeadCrane(i,ins.machine_offsets[i],ins.machine_names[i],max_steps)
-        for task in ins.tasks:
+                if  isinstance(ins.machine_offsets[i],list):
+                    self.machines[i]=Transfer(i,ins.machine_offsets[i],ins.machine_names[i])
+                else:
+                    self.machines[i]=OverHeadCrane(i,ins.machine_offsets[i],ins.machine_names[i],max_steps)
+                    self.cranes.append(self.machines[i])
+        tasks=extend_tasks(ins.tasks,job_nums_dict)
+        for task in tasks:
             if task.job_index not in self.jobs:
                 self.jobs[task.job_index]=Job(task.job_index)
             job=self.jobs[task.job_index]
@@ -65,9 +72,23 @@ class JobShop:
     def reset(self):
         for m in self.machines.values():
             m.reset()
+            
+    @property
+    def ends_of_machine_occupancies(self):
+        num_machines=self.instance.num_machines
+        rt=[0]*num_machines
+        for i,m in self.machines.items():
+            rt[i]=m.last_time
+        return np.array(rt,dtype=float)
 
-
-
+    def check_done(self) -> bool:
+        rt=True
+        for job in self.jobs.values():
+            for task in job.tasks:
+                if task.done==False:
+                    rt=False
+                    break
+        return rt
 
 
 

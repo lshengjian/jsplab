@@ -2,7 +2,7 @@ from typing import List,Dict
 import numpy as np
 from collections import namedtuple,defaultdict
 
-__all__=[  'OpTime','Task','convert2jsp_data','convert2fjsp_data' ]
+__all__=[  'OpTime','Task','extend_tasks','convert2jsp_data','convert2fjsp_data' ]
 
 OpTime = namedtuple("OpTime", "machine duration")
 # Point = namedtuple('Point', ['x', 'y'], defaults=(0.0, 0.0))
@@ -53,6 +53,7 @@ class Task:
 
         return msg2 if self.done else msg1
 
+    @property
     def info(self) -> str:
         m_idxs=self.eligible_machines
         ms=map(lambda idx:idx+1,m_idxs)
@@ -60,7 +61,24 @@ class Task:
         data=str(list(zip(ms,ts))).replace(' ','')
         #flag='Y' if self.is_last else 'X'
         return f"J{self.job_index+1}-{self.index+1}|{self.runtime:.0f},{data}"
-
+    
+def extend_tasks(tasks:List[Task],nums:Dict[int,int]={}):
+    '''
+    通过流程模板创建多个具体作业流程
+    '''
+    job_ids=set(map(lambda task:task.job_index,tasks))
+    job_tasks={j_id:list(filter(lambda task:task.job_index==j_id,tasks)) for j_id in job_ids}
+    
+    cnt=0
+    rt:List[Task]=[]
+    for j_id,tasks in job_tasks.items():
+        num_jobs=nums.get(j_id,1)
+        for _ in range(num_jobs):
+            for task in tasks:
+                t2=Task(cnt,task.index,task._runtimes) #todo : copy()
+                rt.append(t2)
+            cnt+=1
+    return rt
 def instance2dict(instance:List[Task])->Dict[int,List[List[OpTime]]]:
     job_data=defaultdict(list)
     task_data=defaultdict(list)

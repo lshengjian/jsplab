@@ -21,7 +21,7 @@ class MachineType(IntEnum):
 
 class Machine:
     def __init__(self,index=0,offset=0,name=''):
-        self._observers = []
+        
         self._offset=offset
         #self.offset=offset
         self.index=index
@@ -29,33 +29,15 @@ class Machine:
         self.tasks:SortedDict[int,Task]=SortedDict()
         self.last_time=0
 
+    def reset(self):
+        self.last_time=0 
+
     @property
     def offset(self):
         return self._offset
      
     def __str__(self):
-        return f'{self.name}[{self.offset}|{self.utilization_rate()*100:.0f}%]'
-
-    def add_subscriber(self, observer):
-        if observer not in self._observers:
-            self._observers.append(observer)
-
-    def remove_subscriber(self, observer):
-        try:
-            self._observers.remove(observer)
-        except ValueError:
-            pass
-
-    def notify(self,event:Event):
-        event.sender=self
-        event.time_step=self.last_time
-        for observer in self._observers:
-            #logger.debug(event)
-            observer.update(event)
-
-    def update(self,event:Event):
-        pass
-        #print(f'{event}')
+        return f'{self.name}[{self._offset}|{self.utilization_rate()*100:.0f}%]'
 
     def get_machine_type(self)->MachineType:
         mts=MachineType.__members__
@@ -88,8 +70,9 @@ class Machine:
   
     def clean_task(self,task:Task):
         if self.last_time==task.time_finished:
-            self.last_time==task.time_started
-        self.tasks.pop(task.time_started)
+            self.last_time=task.time_started
+        if task.time_started in self.tasks:
+            self.tasks.pop(task.time_started)
 
 
     def _add_task(self,task:Task)->int:
@@ -121,4 +104,16 @@ class Tank(Machine):
     pass
 
 class Transfer(Machine):
-    pass
+    def __init__(self,index=0,offsets=[],name=''):
+        super().__init__(index,offsets,name)
+        self.x1=offsets[0]
+        self.x2=offsets[1]
+        self._offset=offsets[0]
+    def reset(self):
+        self.last_time=0 
+        self._offset=self.x1
+        
+    def assign(self,task:Task)->int: 
+        rt=super().assign(task)
+        self.last_time+=task.runtime#返回起点
+        return rt

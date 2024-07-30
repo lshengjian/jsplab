@@ -5,12 +5,12 @@ import copy
 from collections import defaultdict
 from gymnasium import spaces
 import gymnasium as gym
-from src.core import Instance,get_max_steps,Task,convert2fjsp_data,OverHeadCrane,JobShop
+from src.core import Instance,get_max_steps,Job,Task,convert2fjsp_data,OverHeadCrane,JobShop
 from src.core.crane_state import make_crane_states
 from src.utils import console
 from rich.text import Text
+from src.core.machine import MachineType
 import time
-from ..core import JobShop
 NUM_SPACE=5
 def print_info(info):
     console.print('',end='\r')
@@ -59,7 +59,7 @@ class ElectroplateJobShopEnv(gym.Env):
         # reward parameters
         self.reward_strategy = 'dense_makespan_reward'
         self.reward_scale =  1
-        self.mr2_reward_buffer: List[List] = [[] for _ in range(len(data))]  # needed for m2r reward only
+        #self.mr2_reward_buffer: List[List] = [[] for _ in range(len(data))]  # needed for m2r reward only
 
         #self.set_instance_info()
         #self.machine_tasks:Dict[int,List[Task]]=defaultdict(list)
@@ -74,54 +74,60 @@ class ElectroplateJobShopEnv(gym.Env):
         self.episodes_rewards: List = []
         self.episodes_makespans: List = []
 
-        self.action_space: spaces.Discrete = spaces.Discrete(self.max_num_jobs*self.max_machines_per_task) 
+        self.action_space: spaces.Discrete = spaces.Discrete(self.shop.instance.num_jobs) 
         # overwrite observation space
         observation_shape = np.array(self.state_obs).shape
         self.observation_space: spaces.Box = spaces.Box(low=0, high=1, shape=observation_shape)
     def debug(self):
-        for m,ts in self.machine_tasks.items():
-            name=self.machine_names[m]
-            offset=self.machine_offsets[m]
+        for i,m in self.shop.machines.items():
+            name=self.shop.instance.machine_names[i]
+            offset=self.shop.instance.machine_offsets[i]
             print(f'{name}[{offset}]:',end='')
-            for task in ts:
+            for task in m.tasks:
                 print(f'{task}',end=' ')
             print()
 
     def replay(self,pause_time:int):
         data=[]
         steps=self.makespan
-        for m_id,agv in self.shop.machines.items():
-            tasks=self.machine_tasks[m_id]
+        x1=self.shop.instance.min_offset
+        x2=self.shop.instance.max_offset
+        print(f'offset:{x1}->{x2}')
+        for agv in self.shop.cranes:
+            tasks=agv.tasks.values()
             moves=[]
             for task in tasks:
                 moves.append((task.time_started,task.time_finished))
             flags=make_crane_states(agv.pos,moves,2,2)
             flags=list(map(str,flags))
             data.append((agv.pos,flags))
-        x1=self.instance.min_offset
-        x2=self.instance.max_offset
-        offsets=self.instance.machine_offsets
-        agv_start=self.instance.first_crane_index 
+
+        offsets=self.shop.instance.machine_offsets
+        agv_start=self.shop.instance.first_crane_index 
         info=[Text(f'{i:^4d}', style="bold yellow") for i in range(x1,x2+1)]
         print_info(info)
         console.print()
-        for t in range(steps):
-            m_id=' '
-            info=[Text(f'{m_id:^{NUM_SPACE}s}')]*(x2-x1+1)
-            #assert len(info)==self.max_x-self.min_x+1
-            
-            # for i,x in enumerate(offsets):
-            #     if i>=agv_start:
-            #         continue
-            #     m_id=self.instance.machine_names[i]
-            #     info[x]=Text(f'{m_id:<{NUM_SPACE}s}', style="bold green")
-            #console.print(f'\r{info}',end='')
+        mname=' '
+        info=[Text(f'{mname:^{NUM_SPACE}s}')]*(x2-x1+1)
+        for i,x in enumerate(offsets):
+            if i>=agv_start:
+                continue
+            mname=self.shop.instance.machine_names[i]
+            if isinstance(x,list):
+                x=x[0]
+            #print(mname,x-x1)
+            info[x-x1]=Text(f'{mname:<{NUM_SPACE}s}', style="bold green")
+        print_info(info)
+        console.print()
 
+        for t in range(round(steps)):
+            mname=' '
+            info=[Text(f'{mname:^{NUM_SPACE}s}')]*(x2-x1+1)
             for i,agv in enumerate(data):
                 x=agv[0][t]
                 dir=agv[1][t]
                 m_id=f'{i+1}{dir}'
-                info[x]=Text(f'{m_id:<{NUM_SPACE}s}', style="red")
+                info[x-x1]=Text(f'{m_id:<{NUM_SPACE}s}', style="red")
             # for j_id in range(self.instance.num_jobs):
             #     x=self.shop.get_job_pos(t,j_id,self.tasks)
             #     if x>=0:
@@ -176,22 +182,21 @@ class ElectroplateJobShopEnv(gym.Env):
         job_id=action #天车任务
         #selected_job_vector = self.to_one_hot(job_id, self.max_num_jobs)
         self.action_history.append(action)
-        op_task, agv_task = self.get_cur_tasks(job_id)
+        
+        op_task, agv_task ,next_task= self.get_cur_tasks(job_id)
+        
         # size=len(selected_task.eligible_machines)
         # machine_id=selected_task.eligible_machines[machine_idx%size]#self.choose_machine(selected_task)
         machine_id=self.choose_machine(op_task)
-        
-        self.execute_action(job_id, op_task, machine_id)
+        m1=self.shop.machines[machine_id]
+        agv=None
+        m2=None
         if agv_task!=None:
-            next_op_task_idx = self.task_job_mapping[(job_id,agv_task.index+1)]
-            next_op_task = self.tasks[next_op_task_idx]
-            agv_id=self.choose_machine(agv_task)
-            agv=self.shop.machines[agv_id]
-            x1=self.machine_offsets[machine_id]
-            #dis=abs(agv.offset-x1)
-            machine_id=self.choose_machine(next_op_task)
-            x2=self.machine_offsets[machine_id]
-            self.execute_action(job_id, agv_task, agv_id,agv,x1,x2)
+            agv=self.shop.machines[self.choose_machine(agv_task)]
+        if next_task!=None:
+            m2=self.shop.machines[self.choose_machine(next_task)]
+        self.shop.jobs[job_id].assign(agv,m1,m2)
+
 
         # update variables and track reward
         action_mask = self.get_action_mask()
@@ -209,10 +214,10 @@ class ElectroplateJobShopEnv(gym.Env):
             self.episodes_rewards.append(np.mean(self.reward_history))
 
         self.num_steps += 1
-        time_out=self.num_steps == self.num_steps_max
-        if not self.shop.is_safe(self.get_makespan()):
-            time_out=True
-            reward=-10
+        time_out=self.num_steps == self.shop.instance.max_steps
+        # if not self.shop.is_safe(self.get_makespan()):
+        #     time_out=True
+        #     reward=-10
         return observation, reward, done, time_out ,infos
 
     def reset(self,seed=None, options=None) -> Tuple[NDArray,Dict]:
@@ -228,36 +233,38 @@ class ElectroplateJobShopEnv(gym.Env):
         # update runs (episodes passed so far)
         self.runs += 1
         self.num_steps=0
-        self.machine_tasks.clear()
+        self.shop.reset()
+
+        #self.machine_tasks.clear()
         #self.job_tasks.clear()
         # clear episode rewards after all training data has passed once. Stores info across runs.
-        if self.data_idx == 0:
-            self.episodes_makespans, self.episodes_rewards = ([], [])
+        # if self.data_idx == 0:
+        #     self.episodes_makespans, self.episodes_rewards = ([], [])
             #self.iterations_over_data += 1
 
         # load new instance every run
-        self.data_idx = 0 if self.runs<1 else self.runs % len(self.batch_data)
-        self.tasks = copy.deepcopy(self.batch_data[self.data_idx])
-        self.total_num_tasks: int = len(self.tasks)
-        if self.shuffle:
-            np.random.shuffle(self.tasks)
-        data=convert2fjsp_data(self.tasks)
-        self.num_jobs=len(data)
-        self.num_tasks_job: NDArray = np.zeros(self.num_jobs, dtype=int)
-        for i,job in enumerate(data):
-            self.num_tasks_job[i]=len(job)
-        self.max_job_index: int = self.num_jobs - 1
-        self.last_mask: NDArray = np.zeros(self.num_jobs, dtype=int)
+        # self.data_idx = 0 if self.runs<1 else self.runs % len(self.batch_data)
+        # self.tasks = copy.deepcopy(self.batch_data[self.data_idx])
+        # self.total_num_tasks: int = len(self.tasks)
+        # if self.shuffle:
+        #     np.random.shuffle(self.tasks)
+        # data=convert2fjsp_data(self.tasks)
+        # self.num_jobs=len(data)
+        # self.num_tasks_job: NDArray = np.zeros(self.num_jobs, dtype=int)
+        # for i,job in enumerate(data):
+        #     self.num_tasks_job[i]=len(job)
+        # self.max_job_index: int = self.num_jobs - 1
+        self.last_mask: NDArray = np.zeros(len(self.shop.jobs), dtype=int)
         self.makespan = 0
-        self.ends_of_machine_occupancies: NDArray = np.zeros(self.num_machines, dtype=int)
+        #self.ends_of_machine_occupancies: NDArray = np.zeros(self.num_machines, dtype=int)
         #self.tool_occupancies = [[] for _ in range(self.num_tools)]
-        self.job_task_state: NDArray = np.zeros(self.num_jobs, dtype=int)
+        #self.job_task_state: NDArray = np.zeros(self.num_jobs, dtype=int)
         self.action_history = []
         self.executed_job_history = []
         self.reward_history = []
 
 
-        self.task_job_mapping:Dict[Tuple[int,int],int] = {(task.job_index, task.index): i for i, task in enumerate(self.tasks)}
+        #self.task_job_mapping:Dict[Tuple[int,int],int] = {(task.job_index, task.index): i for i, task in enumerate(self.tasks)}
 
         # retrieve maximum deadline of the current instance
         # max_deadline = max([task.deadline for task in self.tasks])
@@ -279,29 +286,29 @@ class ElectroplateJobShopEnv(gym.Env):
         # (1) remaining time of operations currently being processed on each machine (not compatible with our offline
         # interaction logic
         # (2) sum of all task processing times still to be processed on each machine
-        processing_times_on_machines = np.zeros(self.num_machines)
+        processing_times_on_machines = np.zeros(self.shop.instance.num_machines)
         # (3) sum of all task processing times left on each job
-        processing_times_per_job = np.zeros(self.max_num_jobs)
+        processing_times_per_job = np.zeros(self.shop.instance.num_jobs)
         # (4) processing time of respective next task on job (-1 if job is done)
-        operation_time_of_next_task_per_job = np.zeros(self.max_num_jobs)
+        operation_time_of_next_task_per_job = np.zeros(self.shop.instance.num_jobs)
         # (5) machine used for next task (altered for FJJSP compatability to one-hot encoded multibinary representation)
-        machines_for_next_task_per_job = np.zeros((self.max_num_jobs, self.num_machines))
+        machines_for_next_task_per_job = np.zeros((self.shop.instance.num_jobs, self.shop.instance.num_machines))
         # (6) time passed at any given moment. Not really applicable to the offline scheduling case.
 
         # feature assembly
-        next_tasks = self.get_next_tasks()
-        for task in self.tasks:
-            if task.done:
-                processing_times_on_machines[task.selected_machine] += task._runtimes[task.selected_machine]
-                processing_times_per_job[task.job_index] += task._runtimes[task.selected_machine]
-            elif task == next_tasks[task.job_index]:  # next task of the job
-                operation_time_of_next_task_per_job[task.job_index] = task.runtime
-                machines_for_next_task_per_job[task.job_index,:] = task.machines
+        # next_tasks = self.get_next_tasks()
+        # for task in self.tasks:
+        #     if task.done:
+        #         processing_times_on_machines[task.selected_machine] += task._runtimes[task.selected_machine]
+        #         processing_times_per_job[task.job_index] += task._runtimes[task.selected_machine]
+        #     elif task == next_tasks[task.job_index]:  # next task of the job
+        #         operation_time_of_next_task_per_job[task.job_index] = task.runtime
+        #         machines_for_next_task_per_job[task.job_index,:] = task.machines
 
-        # normalization
-        processing_times_on_machines /= (self.total_num_tasks * self.max_runtime)
-        processing_times_per_job /= (self.max_num_tasks * self.max_runtime)
-        operation_time_of_next_task_per_job /= self.max_runtime
+        # # normalization
+        # processing_times_on_machines /= (self.total_num_tasks * self.max_runtime)
+        # processing_times_per_job /= (self.max_num_tasks * self.max_runtime)
+        # operation_time_of_next_task_per_job /= self.max_runtime
 
         observation = np.concatenate([
             processing_times_on_machines,
@@ -325,8 +332,15 @@ class ElectroplateJobShopEnv(gym.Env):
         :return: Action mask
 
         """
-        job_mask = np.where(self.job_task_state < self.num_tasks_job,
-                            np.ones(self.num_jobs, dtype=int), np.zeros(self.num_jobs, dtype=int))
+        num_jobs=self.shop.instance.num_jobs
+        rt=[1]*num_jobs
+        for i,job in self.shop.jobs.items():
+            if job.cur_task_index==len(job.tasks)-1:
+                rt[i]=0
+        job_mask=np.array(rt,dtype=int)
+
+        # job_mask = np.where(self.job_task_state < self.num_tasks_job,
+        #                     np.ones(self.num_jobs, dtype=int), np.zeros(self.num_jobs, dtype=int))
 
         self.last_mask = job_mask
         return job_mask
@@ -376,7 +390,7 @@ class ElectroplateJobShopEnv(gym.Env):
         """
         possible_machines = task.machines
         machine_times = np.where(possible_machines,
-                                 self.ends_of_machine_occupancies,
+                                 self.shop.ends_of_machine_occupancies,
                                  np.full(len(possible_machines), np.inf))
 
         return int(np.argmin(machine_times))
@@ -434,17 +448,21 @@ class ElectroplateJobShopEnv(gym.Env):
 
 
     def get_cur_tasks(self, job_idx: int) -> Tuple:
-        cur_task_idx=self.job_task_state[job_idx]
-        task_idx = self.task_job_mapping[(job_idx,cur_task_idx )]
-        op_task:Task = self.tasks[task_idx]
-        agv_task=None 
+        job=self.shop.jobs[job_idx]
+        op_task:Task=job.cur_task
+        # cur_task_idx=self.job_task_state[job_idx]
+        # task_idx = self.task_job_mapping[(job_idx,cur_task_idx )]
+        #op_task:Task = self.tasks[task_idx]
+        agv_task:Task=None 
+        next_op:Task=None
         if not op_task.is_last:
-           task_idx = self.task_job_mapping[(job_idx,cur_task_idx+1)]  
-           agv_task=self.tasks[task_idx]
+           #task_idx = self.task_job_mapping[(job_idx,cur_task_idx+1)]  
+           agv_task=job.tasks[job.cur_task.index+1]
+           next_op=job.tasks[job.cur_task.index+2]
            #print('op task',op_task)
  
 
-        return op_task, agv_task
+        return op_task, agv_task,next_op
     
     def sparse_makespan_reward(self) -> int:
         """
@@ -501,14 +519,21 @@ class ElectroplateJobShopEnv(gym.Env):
         :return: True if all jobs are done, else False
 
         """
-        sum_done = sum([task.done for task in self.tasks])
-        return sum_done == self.total_num_tasks 
+        # sum_done = sum([task.done for task in self.tasks])
+        # return sum_done == self.total_num_tasks 
+        return self.shop.check_done()
 
     def get_makespan(self):
         """
         Returns the current makespan (the time the latest of all scheduled tasks finishes)
         """
-        return np.max(self.ends_of_machine_occupancies)
+        # rt=0
+        # for t,m in self.shop.machines.items():
+        #     if rt<m.last_time:
+        #         rt=m.last_time
+        # return rt
+
+        return np.max(self.shop.ends_of_machine_occupancies)
 
     @staticmethod
     def to_one_hot(x: int, max_size: int) -> np.array:

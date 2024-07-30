@@ -16,7 +16,7 @@ class IParse(ABC):
 
     def debug(self,info:Instance):
         for task in info.tasks:
-            print(task.info())
+            print(task.info)
 
 class ExcelFileParser(IParse):
     def parse(self,fname:str)->Instance:
@@ -31,8 +31,11 @@ class ExcelFileParser(IParse):
         for i,machine_name in enumerate(machines):
             ss=machine_name.split('|')
             
-            if len(ss)==2:
-                offsets.append(int(ss[1]))
+            if len(ss)>=2:
+                if len(ss)==3:
+                    offsets.append([int(ss[1]),int(ss[2])])
+                else:
+                    offsets.append(int(ss[1]))
                 machine_names.append(ss[0])
                 if ss[0].startswith('AGV'):
                     agv_idxs.append(i)

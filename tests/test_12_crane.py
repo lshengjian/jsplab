@@ -5,11 +5,11 @@ def test_move():
     agv.move(1,6,4)
     agv.debug()
     assert agv.pos[1]==2 and agv.pos[11]==6
-    assert agv.last_time==13
+    assert agv.last_time==11
     agv.move(6,3,15)
-    assert agv.pos[19]==4 and agv.pos[22]==3
-    assert agv.last_time==22
     agv.debug()
+    assert agv.last_time==18
+    assert agv.pos[16]==3 and agv.pos[17]==3  and agv.pos[18]==3
 # def test_event():
 #     c1=OverHeadCrane(1,3,'H1',30,2,2)
 #     c2=OverHeadCrane(2,6,'H2',30,2,2)

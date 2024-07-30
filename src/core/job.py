@@ -37,6 +37,7 @@ class Job:
         
         assert task_index<len(self.tasks) and task_index%2==0  
         op_task=self.tasks[task_index]
+        op_task.time_started=self.last_time
         start=pre.assign(op_task)-op_task.runtime #估计分配
         #op_task.done=False
         pre.clean_task(op_task)
@@ -45,20 +46,29 @@ class Job:
             agv_task=self.tasks[task_index+1]
             x1=pre.offset
             x2=next.offset
-            dt,t1=crane.move(x1,x2,start)
+            t0=crane.last_time
+            dt1,dt2=crane.move(x1,x2,start)#这里会修改last_time
+            t1=crane.last_time-dt2
+            crane.last_time=t0
             op_task.time_finished=t1
             op_task.time_started=t1-op_task.runtime
             pre.assign(op_task) #以天车为准再分配
-            agv_task.runtime=dt
+            
+            # dt=dt1-op_task.runtime #天车提前移动时间小于加工时间，则并行不计
+            # dt=dt if dt>0 else 0
+            agv_task.runtime=dt2 #todo 
             agv_task.time_started=op_task.time_finished
-            crane.assign(agv_task)
+            self.last_time=crane.assign(agv_task)
             self._cur_task_index+=2
         elif op_task.is_last:
             agv_task=self.tasks[task_index-1]
             op_task.time_started=agv_task.time_finished
-            pre.assign(op_task)
+            self.last_time=pre.assign(op_task)
 
-
+    @property 
+    def done(self)->int:  
+        ds=list(filter(lambda t:t.done,self.tasks))
+        return len(ds)==len(self.tasks)
 
     @property 
     def cur_task_index(self)->int:  

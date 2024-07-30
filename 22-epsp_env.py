@@ -11,18 +11,18 @@ if __name__ == '__main__':
     cnt=1
     parser:IParse=ExcelFileParser()
     ins=parser.parse('epsp/demo/2x(3+1).xlsx')
-    parser.debug(ins)
     steps=get_max_steps(ins,2,2,2)
-    #actions=[(1, 0), (0, 0), (1, 3), (1, 1), (0, 3), (0, 1), (1, 3), (1, 2), (0, 3), (0, 2)]
-    #ins=parser.parse('epsp/demo/2x(4+2).xlsx')
-    #actions=[(1, 0), (0, 0),  (1, 1), (0, 4), (0, 2), (1, 5), (1, 3), (0, 5), (0, 3)]
-    js=JobShop(ins,steps)
-    env=ElectroplateJobShopEnv(js)
+    parser.debug(ins)
+    shop=JobShop(ins,steps)
+    
+    env=ElectroplateJobShopEnv(shop)
     obs,info=env.reset()
     done,timeout=False,False
     i=0
     while not (done or timeout):
         mask=info['mask']
+        if sum(mask)<1:
+            break
         jobs=np.where(mask>0)[0]
         job_id=np.random.choice(jobs,1)[0]
         #m_id=np.random.randint(0,env.max_machines_per_task)
