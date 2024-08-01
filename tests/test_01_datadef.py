@@ -3,6 +3,7 @@ from omegaconf import OmegaConf
 from dataclasses import asdict
 from pathlib import Path
 from src.datadef import G
+
 def test_read_data_from_yaml():
     path=Path(__file__).parent.parent/"conf/demo.yaml"
     config = OmegaConf.load(path)
@@ -18,4 +19,5 @@ def test_read_data_from_yaml():
 def test_read_global_data():
     assert 12==G.FPS
     assert 1e-8==G.EPS
+    assert 2==G.CRANE_UP_TIME==G.CRANE_DOWN_TIME
     assert 1.0==G.CRANE_VELOCITY[0] and 1.0==G.CRANE_VELOCITY[1]

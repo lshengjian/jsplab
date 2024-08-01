@@ -8,9 +8,21 @@ import logging.config
 class Constant:
     FPS:int 
     EPS:float
+    MAX_STEP_SCALE:float
+    CRANE_UP_TIME:float 
+    CRANE_DOWN_TIME:float
     CRANE_HEIGHT:int #天车高度
     CRANE_SAFE_DISTANCE:int #天车安全距离
     CRANE_VELOCITY:List[float] #天车默认移动速度
+    def __post_init__(self):
+        vx,vy=self.CRANE_VELOCITY
+        if vy>self.EPS:
+            if self.CRANE_UP_TIME==0:
+                self.CRANE_UP_TIME=self.CRANE_HEIGHT/vy
+            if self.CRANE_DOWN_TIME==0:
+                self.CRANE_DOWN_TIME=self.CRANE_HEIGHT/vy
+
+
     '''
     WINDOW_TITLE:str='title'
     TILE_SIZE:int=48

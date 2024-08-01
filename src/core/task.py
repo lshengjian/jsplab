@@ -1,4 +1,5 @@
 from typing import List,Dict
+from numpy.typing import NDArray
 import numpy as np
 from collections import namedtuple,defaultdict
 
@@ -8,13 +9,14 @@ OpTime = namedtuple("OpTime", "machine duration")
 # Point = namedtuple('Point', ['x', 'y'], defaults=(0.0, 0.0))
 class Task:
     def __init__(self, job_index: int, task_index: int,
-                 op_times: List[int] = None
+                 op_times: List[int] = None,proc_index=0
                 ):
 
         # test for correct data type of required and throw type error otherwise
         if not isinstance(job_index, int) or not isinstance(task_index, int):
             raise TypeError("Job index and task index must be of type int.")
         # required - don't touch after init
+        self.proc_index=proc_index
         self.job_index = job_index #作业索引号，从0开始
         self.index = task_index #任务索引号，从0开始
         self.is_last=False
@@ -32,10 +34,10 @@ class Task:
 
 
     @property 
-    def machines(self):
+    def machines(self)->NDArray:
         times=self._runtimes
         data=np.where(times>0,np.ones_like(times),times)
-        return data.tolist()
+        return data#.tolist()
     
     @machines.setter
     def machines(self,op_times):
@@ -66,8 +68,8 @@ def extend_tasks(tasks:List[Task],nums:Dict[int,int]={}):
     '''
     通过流程模板创建多个具体作业流程
     '''
-    job_ids=set(map(lambda task:task.job_index,tasks))
-    job_tasks={j_id:list(filter(lambda task:task.job_index==j_id,tasks)) for j_id in job_ids}
+    proc_ids=set(map(lambda task:task.job_index,tasks))
+    job_tasks={j_id:list(filter(lambda task:task.job_index==j_id,tasks)) for j_id in proc_ids}
     
     cnt=0
     rt:List[Task]=[]
@@ -75,7 +77,7 @@ def extend_tasks(tasks:List[Task],nums:Dict[int,int]={}):
         num_jobs=nums.get(j_id,1)
         for _ in range(num_jobs):
             for task in tasks:
-                t2=Task(cnt,task.index,task._runtimes) #todo : copy()
+                t2=Task(cnt,task.index,task._runtimes,j_id) #todo : copy()
                 rt.append(t2)
             cnt+=1
     return rt

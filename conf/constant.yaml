@@ -1,5 +1,8 @@
 FPS: 12
 EPS: 1e-8
+MAX_STEP_SCALE: 1.8
 CRANE_HEIGHT: 2 #天车高度
+CRANE_UP_TIME: 2 #天车提升时间
+CRANE_DOWN_TIME: 2 #天车下落时间
 CRANE_SAFE_DISTANCE: 2 #天车安全距离
 CRANE_VELOCITY: [1.0,1.0] #天车默认移动速度

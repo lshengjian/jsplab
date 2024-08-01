@@ -11,19 +11,15 @@ def test_orderdict():
     assert list(data.keys()) ==[1,2,3]
     assert list(data.values()) ==[3,2,1]
 
-
-    # 创建一个SortedDict  
     sorted_dict = SortedDict()  
 
-    # 插入元素  
+
     sorted_dict['b'] = 2  
     sorted_dict['a'] = 1  
     sorted_dict['c'] = 3  
 
-    #print(sorted_dict)  # 输出: SortedDict({'a': 1, 'b': 2, 'c': 3})
-
     assert list(sorted_dict.keys())==['a', 'b',  'c']
 
 def test_nonzero():
-    idxs=np.nonzero([0,1.5,2])[0] #只有1维
+    idxs=np.nonzero([0,1.5,2])[0] # olny one dimetion
     assert [1,2]==idxs.tolist()

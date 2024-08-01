@@ -1,7 +1,8 @@
 from .task import Task,OpTime,convert2fjsp_data
-from typing import List,Dict
+from typing import List
 from collections import defaultdict
 import numpy as np
+from ..datadef import G
 
 # def greedy_select(job:Job,ms:List[Machine]):
 #     op_times=np.array(job.cur_task._runtimes)
@@ -22,6 +23,8 @@ class Instance:
         self.name:str=name
         self.tasks:List[Task]=tasks
         self.machine_offsets:List[int]=offsets
+        self.num_machines = len(self.tasks[0].machines)
+
         xs=[]
         for x in offsets:
             if isinstance(x,list):#对于转运机器，其有两个固定位
@@ -39,7 +42,7 @@ class Instance:
             assert len(machine_names)==len(offsets)
 
         self.first_crane_index:int=first_crane_index
-        self.setup()
+        #self.setup()
     
     # @property 
     # def world(self)->Tuple[List[Machine],List[Job]]:
@@ -58,10 +61,10 @@ class Instance:
     
 
 
-    def setup(self):
-        data=convert2fjsp_data(self.tasks)
+    def setup(self,tasks:List[Task]):
+        data=convert2fjsp_data(tasks)
         self.num_jobs = num_jobs=len(data)
-        self.num_machines = num_machines=len(self.tasks[0].machines)
+        
         max_alt_machines=0
         op_times=defaultdict(list)
         num_tasks_job={}
@@ -78,10 +81,11 @@ class Instance:
                     op_times[k].append(OpTime(*alt))
         
         self.num_tasks_job=num_tasks_job#每个作业有几个任务
+        self.max_tasks_job=max(num_tasks_job)
         num_tasks_job=list(num_tasks_job.values())
         self.op_times=op_times
         self.max_machines_per_task=max_alt_machines#每个任务最大处理机器数
-        
+        self.max_runtime=0
         job_seq_tasks=[]
 
         for j,size in enumerate(num_tasks_job):
@@ -94,7 +98,8 @@ class Instance:
             last=first_task_index_job.get(j-1,0)
             first_task_index_job[j]=last+self.num_tasks_job[j-1]
         self.first_task_index_job=first_task_index_job
-        self.max_steps=get_max_steps(self)
+        
+        self.max_steps=get_max_steps(self,G.CRANE_UP_TIME,G.CRANE_DOWN_TIME,G.MAX_STEP_SCALE)
 
         
     def __str__(self) -> str:
@@ -104,15 +109,14 @@ class Instance:
 
 def get_max_steps(instance: Instance,crane_up_time=2,crane_down_time=2,scale=1):
     rt=0
-    for task_id in range(len(instance.tasks)-1):
-        task=instance.tasks[task_id]
-        if task_id%2==0:
-            
+    for task in instance.tasks:
+        if task.index%2==0:
             rt+=task.runtime
-            #print(task_id+1,task.runtime)
+            if instance.max_runtime<task.runtime:
+                instance.max_runtime=task.runtime
         else:#天车处理任务
-            pre=instance.tasks[task_id-1]
-            next=instance.tasks[task_id+1]
+            pre=instance.tasks[task.index-1]
+            next=instance.tasks[task.index+1]
             
             m1_idxs=pre.eligible_machines
             m2_idxs=next.eligible_machines
@@ -125,7 +129,10 @@ def get_max_steps(instance: Instance,crane_up_time=2,crane_down_time=2,scale=1):
                 x2=x2[-1]
             dt=abs(x2-x1)+crane_up_time+crane_down_time# todo
             task.runtime=dt
-            rt+=dt 
-    task=instance.tasks[-1]#最后一个加工处理
-    rt+=task.runtime
+            rt+=dt
+            if instance.max_runtime<dt:
+                instance.max_runtime=dt
+
+            #print(task)
+    #print(rt)
     return round(rt*scale)

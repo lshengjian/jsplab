@@ -3,7 +3,8 @@ from src.core import  *
 def test_shop():
     paser:IParse=ExcelFileParser()
     ins=paser.parse('epsp/demo/1x(3+1).xlsx')
-    shop=JobShop(ins,30,2)
+    shop=JobShop(ins)
+    shop.reset()
     start:Tank = shop.machines[0]
     tank:Tank = shop.machines[1]
     end:Tank = shop.machines[2]

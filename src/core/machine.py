@@ -26,11 +26,12 @@ class Machine:
         #self.offset=offset
         self.index=index
         self.name=name if len(name)>0 else f'M{index+1}'
-        self.tasks:SortedDict[int,Task]=SortedDict()
+        self.sort_tasks:SortedDict[int,Task]=SortedDict()
         self.last_time=0
 
     def reset(self):
-        self.last_time=0 
+        self.last_time=0
+        self.sort_tasks.clear() 
 
     @property
     def offset(self):
@@ -48,51 +49,48 @@ class Machine:
 
     def utilization_rate(self,cur_time:int=0): 
         total=0
-        for task in self.tasks.values():
+        for task in self.sort_tasks.values():
             if not task.done:
                 break
             if cur_time<task.time_finished:
                 cur_time=task.time_finished
-            total+=task.time_finished-task.time_started
+            total+=task.runtime
         return total/cur_time if cur_time>0 else 0  
-    
-    # def get_runtime(self,task:Task,pre:Task=None,next:Task=None,next_machine_index:int=None):
-    #     assert self.index in task.eligible_machines
-    #     return task._runtimes[self.index]
+   
+
         
-    def assign(self,task:Task)->int: 
-        finish_time=self._add_task(task)
-        task.time_finished=finish_time
-        task.time_started=finish_time-task.runtime
-        task.selected_machine=self.index
-        task.done=True
+    def assign(self,task:Task,is_mock=False)->int: 
+        finish_time=self._add_task(task,is_mock)
+        if not is_mock:
+            task.time_finished=finish_time
+            task.time_started=finish_time-task.runtime
+            task.selected_machine=self.index
+            task.done=True
+            if self.last_time<finish_time:
+                self.last_time=finish_time
         return finish_time
   
-    def clean_task(self,task:Task):
-        if self.last_time==task.time_finished:
-            self.last_time=task.time_started
-        if task.time_started in self.tasks:
-            self.tasks.pop(task.time_started)
 
 
-    def _add_task(self,task:Task)->int:
+    def _add_task(self,task:Task,is_mock=False)->int:
         start=task.time_started
         end=start+task.runtime
         last=0
         found=False
         
-        for t,task in self.tasks.items():
-            if task.time_started-last>=task.runtime and last<start: #能插进空隙中去
+        for _,t in self.sort_tasks.items():
+            if t.time_started-last>=task.runtime and last<start: #能插进空隙中去
                 #self.tasks[start]=task
                 found=True
                 break
-            last=task.time_finished
+            last=t.time_finished
         if not found:
             if self.last_time>start:
                 start=self.last_time
                 end=start+task.runtime
-            self.last_time=end
-        self.tasks[start]=task
+
+        if not is_mock:
+            self.sort_tasks[start]=task
         return end
 
 class Comm(Machine):
@@ -115,5 +113,5 @@ class Transfer(Machine):
         
     def assign(self,task:Task)->int: 
         rt=super().assign(task)
-        self.last_time+=task.runtime#返回起点
+        self.last_time+=task.runtime#go back to begin offset
         return rt

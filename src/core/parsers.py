@@ -5,7 +5,7 @@ from collections import defaultdict
 import pandas as pd
 from pathlib import Path
 from . import Task,Instance
-
+from ..datadef import G
 from ..utils.split import *
 __all__=['IParse','ExcelFileParser','StandardFjspFileParser','StandardJspFileParser' ]
 # 定义一个接口类
@@ -42,6 +42,7 @@ class ExcelFileParser(IParse):
             else:
                 offsets.append(i)
         data=df.to_numpy()
+        #print(data)
         task_idxs:Dict[int,int] =defaultdict(int)
         first_agv_idx=None if len(agv_idxs)==0 else min(agv_idxs)
         last_job_idx=0
@@ -57,15 +58,18 @@ class ExcelFileParser(IParse):
             if first_agv_idx!=None:
                 ms[first_agv_idx:]=0
             #idx=np.argmax(ms)
-            task1=Task(job_idx,task_idx,op_times=ms)
+            task1=Task(job_idx,task_idx,ms,job_idx)
             tasks.append(task1)
+            #print(task1)
             if first_agv_idx!=None:
                 agvs=row[1:].copy()
                 agvs[:first_agv_idx]=0
                 if sum(agvs)>0:
-                    task2=Task(job_idx,task_idx+1,op_times=agvs)
+                    task2=Task(job_idx,task_idx+1,agvs,job_idx)
                     task_idxs[job_idx]+=1
                     tasks.append(task2)
+                    #print(task2)
+
         last_task=tasks[-1]
         last_task.is_last=True
         
@@ -95,7 +99,7 @@ class StandardFjspFileParser(IParse):
                     times[mch_idx]=pt
                     # if max_runtime<pt:
                     #     max_runtime=pt
-                task=Task(job_idx,task_idx,op_times=times)
+                task=Task(job_idx,task_idx,times,job_idx)
                 tasks.append(task)
                 idx = next_idx
         return Instance(name,tasks,list(range(n_m)),[],None)

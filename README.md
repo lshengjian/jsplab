@@ -1,2 +1,3 @@
 # jsplab
-车间调度研究
+Research on Scheduling in the Electroplating Workshop.
+[Work In Progress]
