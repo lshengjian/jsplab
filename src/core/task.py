@@ -9,14 +9,16 @@ OpTime = namedtuple("OpTime", "machine duration")
 # Point = namedtuple('Point', ['x', 'y'], defaults=(0.0, 0.0))
 class Task:
     def __init__(self, job_index: int, task_index: int,
-                 op_times: List[int] = None,proc_index=0
+                 op_times: List[int] = None,product_index=0
                 ):
 
         # test for correct data type of required and throw type error otherwise
         if not isinstance(job_index, int) or not isinstance(task_index, int):
             raise TypeError("Job index and task index must be of type int.")
+        if job_index<product_index:
+            raise ValueError("Job index {job_index} should greater product index  {product_index}")
         # required - don't touch after init
-        self.proc_index=proc_index
+        self.product_index=product_index
         self.job_index = job_index #作业索引号，从0开始
         self.index = task_index #任务索引号，从0开始
         self.is_last=False
@@ -37,7 +39,7 @@ class Task:
     def machines(self)->NDArray:
         times=self._runtimes
         data=np.where(times>0,np.ones_like(times),times)
-        return data#.tolist()
+        return data
     
     @machines.setter
     def machines(self,op_times):

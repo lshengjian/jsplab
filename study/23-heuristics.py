@@ -1,7 +1,7 @@
 
 from src.core.parsers import  IParse,ExcelFileParser
 from src.agents.heuristic import HeuristicSelectionAgent
-from src.envs.epsp_env import PlateJobShopEnv
+from src.envs.epsp_env_old import PlateJobShopEnv
 from typing import Union,List,Tuple
 
 

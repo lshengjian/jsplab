@@ -8,9 +8,9 @@ import logging
 logger = logging.getLogger(__name__.split('.')[-1])
 class Job:
 
-    def __init__(self,index=0,proc_index=0):
+    def __init__(self,index=0,product_index=0):
         self.index:int=index
-        self.proc_index=proc_index
+        self.product_index=product_index
         self.tasks:List[Task]=[]
         self.last_time=0
         self.selected_machine:Machine=None
@@ -79,9 +79,11 @@ class Job:
 
 
     @property 
-    def done(self)->int:  
-        ds=list(filter(lambda t:t.done,self.tasks))
-        return len(ds)==len(self.tasks)
+    def done(self)->bool:
+        for task in self.tasks:
+            if not task.done :
+                return False 
+        return True
 
     @property 
     def cur_task_index(self)->int:  

@@ -23,9 +23,9 @@ def test_read_jsp():
 
 def test_read_fjsp():
     paser:IParse=StandardFjspFileParser()
-    info=paser.parse('fjsp/MK/Mk01.fjs')
-    paser.debug(info)
-    assert 'Mk01'==info.name
-    assert 55==len(info.tasks) 
-    assert 3==info.max_machines_per_task
+    ins=paser.parse('fjsp/MK/Mk01.fjs')
+    paser.debug(ins)
+    assert 'Mk01'==ins.name
+    assert 55==len(ins.tasks) 
+    assert 3==ins.max_machines_per_task
     

@@ -58,7 +58,7 @@ class OverHeadCrane(Machine):
     def reset(self):
         super().reset()
         #self._observers.clear()
-        self.pos=np.array([self._offset]*self.MAX_STEPS,dtype=int)
+        self.pos=np.array([self._offset]*(self.MAX_STEPS),dtype=int)
     
     # def push_away(self,event:PushAway):
     #     agv:OverHeadCrane=event.sender
@@ -76,12 +76,13 @@ class OverHeadCrane(Machine):
     #         self.push_away(event)
 
            
-    def debug(self):
+    def debug(self,steps:int):
         print(f'{self.name}[{self._offset}]')
-        for t in range(self.MAX_STEPS):
+        for t in range(steps):
             print(f'{t:02d} ',end='')
         print()
-        for x in self.pos:
+        for t in range(steps):
+            x=self.pos[t]
             print(f'{x:2.0f} ',end='')
         print()
 

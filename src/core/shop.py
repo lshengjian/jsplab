@@ -8,22 +8,68 @@ from .task import Task,extend_tasks
 from ..datadef import G
 from .job import Job
 import numpy as np
+# from enum import IntEnum
+# class NodeType(IntEnum): 
+#     Machine = 0 
+#     Task = 1 
+
+# '''
+# 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0
+# ---节点类型
+#     -offset
+#       -利用率|进度百分比
+# '''
+# class NodeState:
+#     def __init__(self):
+#         self.data=np.zeros(100,dtype=float)
+    
 class JobShop:
     def __init__(self,ins:Instance):
-        # config = OmegaConf.load("conf/constant.yaml")
-        # self.args:Constant = get_dataclass_by_name('Constant')(**config)
         self.instance:Instance =ins  
 
         self.machines:Dict[int,Machine]={}
+        self.machine_indexs_locked=set()
+
         self.cranes:List[OverHeadCrane]=[]
         self.jobs:Dict[int,Job]={}
-        self.machine_indexs_locked=set()
- 
+        
+    @property
+    def num_jobs(self):
+        return len(self.jobs)
+    @property
+    def num_machine(self):
+        return len(self.machines)
+    @property
+    def num_cranes(self):
+        return len(self.cranes)
+    @property
+    def ends_of_machine_occupancies(self):
+        num_machines=self.instance.num_machines
+        rt=[0]*num_machines
+        for i,m in self.machines.items():
+            rt[i]=m.last_time
+        return np.array(rt,dtype=float)
+    @property
+    def last_time(self):
+        return  np.max(self.ends_of_machine_occupancies)   
+    def can_select(self,job:Job):
+        if job.cur_task.is_last:
+            return True
+        next_op_task=job.tasks[job.cur_task_index+2]
+        ms=list(next_op_task.eligible_machines)
+        for m_id in next_op_task.eligible_machines:
+            if m_id in self.machine_indexs_locked:
+                ms.remove(m_id)
+        return len(ms)>0
     def get_next_tasks(self):
         rt=[]
         for job in self.jobs.values():
             rt.append(job.cur_task if not job.cur_task.is_last else None)
         return rt
+    def debug(self):
+        for task in self.tasks:
+            print(task.info)
+
     def reset(self,job_nums_dict={}):
         self.machine_indexs_locked.clear()
         self.jobs.clear()
@@ -47,7 +93,7 @@ class JobShop:
         
         for task in tasks:
             if task.job_index not in self.jobs:
-                self.jobs[task.job_index]=Job(task.job_index,task.proc_index)
+                self.jobs[task.job_index]=Job(task.job_index,task.product_index)
             job=self.jobs[task.job_index]
             job.add_task(task)
         self.tasks=tasks
@@ -58,20 +104,18 @@ class JobShop:
         self.machine_indexs_locked.remove(tank.index)
     def is_lock(self,tank_idx:int):
         return tank_idx in self.machine_indexs_locked
+    
     def get_job_pos(self,step:int,job:Job)->int:
-        #job:Job=self.jobs[job_index]
         data=sorted(job.tasks,key=lambda t:t.time_started)
         for task in data:
             if step<task.time_started and task.index==0:
                 return -1
             if step<=task.time_finished:
                 break
-        # if step>task.time_finished:
-        #     return -1
         if task.index%2==0 and not task.is_last:
             x= self.instance.machine_offsets[task.selected_machine]
             if isinstance(x,list):
-                x=x[0] #todo
+                x=x[1] if task.done else x[0]
             return x
         for agv in self.cranes:
             if agv.index==task.selected_machine and not task.is_last:
@@ -83,10 +127,10 @@ class JobShop:
         cranes=list(filter(lambda m:isinstance(m,OverHeadCrane),self.machines.values()))
         num_agvs=len(cranes)
         cranes=sorted(cranes,key=lambda agv:agv.index)
-        for t in range(max_time+1):
+        for t in range(round(max_time+1)):
             for i in range(num_agvs-1):
                 j=i+1
-                dis=self.safe_distance
+                dis=G.CRANE_SAFE_DISTANCE
                 x1=cranes[i].pos[t]
                 x2=cranes[j].pos[t]
                 if abs(x1-x2) < dis:
@@ -97,22 +141,13 @@ class JobShop:
 
 
             
-    @property
-    def ends_of_machine_occupancies(self):
-        num_machines=self.instance.num_machines
-        rt=[0]*num_machines
-        for i,m in self.machines.items():
-            rt[i]=m.last_time
-        return np.array(rt,dtype=float)
+
 
     def check_done(self) -> bool:
-        rt=True
         for job in self.jobs.values():
-            for task in job.tasks:
-                if task.done==False:
-                    rt=False
-                    break
-        return rt
+            if not job.done:
+               return False
+        return True
 
     def choose_machine(self, task: Task) -> int:
         """
@@ -125,18 +160,22 @@ class JobShop:
         :return: Machine on which the task will be scheduled.
 
         """
-        possible_machines = task.machines
+        now=self.last_time
+        possible_machines = task.machines.copy() #copy
         for i,v in enumerate(possible_machines):
             if v>0 and self.is_lock(i):
                 possible_machines[i]=0
         if sum(possible_machines)<1:
-            #return -1
-            raise ValueError(f'{task} not eligible_machines')
-        machine_times = np.where(possible_machines,
-                                 self.ends_of_machine_occupancies,
-                                 np.full(len(possible_machines), np.inf))
+            raise ValueError(f'{task} not eligible machines now') #return -1 
+        d=np.ones_like(possible_machines)
+        for i,m in self.machines.items():
+            d[i]=1+m.utilization_rate(now)
 
-        return int(np.argmin(machine_times)) #todo fix bug
+            
+        machine_times = np.where(possible_machines,
+                                 self.ends_of_machine_occupancies*d,
+                                 np.full(len(possible_machines), np.inf))
+        return int(np.argmin(machine_times)) 
 
 
 

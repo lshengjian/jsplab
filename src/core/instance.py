@@ -25,9 +25,11 @@ class Instance:
         self.machine_offsets:List[int]=offsets
         self.num_machines = len(self.tasks[0].machines)
 
+        product_ids=set(map(lambda t:t.product_index,tasks))
+        self.product_ids=product_ids
         xs=[]
         for x in offsets:
-            if isinstance(x,list):#对于转运机器，其有两个固定位
+            if isinstance(x,list):#Transfer had 2 offsets [ x1,x2 ]
                 xs.extend(x)
             else:
                 xs.append(x)
@@ -35,44 +37,27 @@ class Instance:
         self.max_offset=max(xs)
 
         self.machine_names=machine_names
-        if len(machine_names)<1:#没有机器名称
+        if len(machine_names)<1:
             for m in range(len(self.machine_offsets)):
                 self.machine_names.append(f'M{m+1}')
         else:
             assert len(machine_names)==len(offsets)
 
         self.first_crane_index:int=first_crane_index
-        #self.setup()
-    
-    # @property 
-    # def world(self)->Tuple[List[Machine],List[Job]]:
-    #     ms:List[Machine]=[]
-    #     for m_id in range(self.num_machines):
-    #         ms.append(Machine(m_id,self.machine_offsets[m_id]))
-
-    #     job_dict={}
-    #     for task in self.tasks:
-    #         job=job_dict.get(task.job_index,None)
-    #         if (job is None):
-    #             job=Job(task.job_index)
-    #             job_dict[job.index]=job
-    #         job.add_task(task)
-    #     return ms,job_dict.values()
-    
+        self.setup(self.tasks)
 
 
     def setup(self,tasks:List[Task]):
         data=convert2fjsp_data(tasks)
-        self.num_jobs = num_jobs=len(data)
+        self.num_jobs = len(data)
         
         max_alt_machines=0
         op_times=defaultdict(list)
         num_tasks_job={}
-        #machines=list(range(self.num_machines))
+
         for j,job in enumerate(data):
             num_tasks_job[j]=0
             for t,task in enumerate(job):
-                #print(task)
                 if max_alt_machines<len(task):
                     max_alt_machines=len(task)
                 k=j,t
@@ -80,8 +65,8 @@ class Instance:
                 for alt in task:
                     op_times[k].append(OpTime(*alt))
         
-        self.num_tasks_job=num_tasks_job#每个作业有几个任务
-        self.max_tasks_job=max(num_tasks_job)
+        self.num_tasks_per_job=num_tasks_job
+        self.max_tasks_per_job=max(num_tasks_job)
         num_tasks_job=list(num_tasks_job.values())
         self.op_times=op_times
         self.max_machines_per_task=max_alt_machines#每个任务最大处理机器数
@@ -92,11 +77,11 @@ class Instance:
             job_seq_tasks+=[j]*size
   
         self.job_seq_tasks=np.array(job_seq_tasks,dtype=int)#任务的作业编号的序列，用于遗传算法等
-        self.num_tasks=len(job_seq_tasks)
+        self.num_total_tasks=len(job_seq_tasks)
         first_task_index_job={0:0}
         for j in range(1,len(num_tasks_job)):
             last=first_task_index_job.get(j-1,0)
-            first_task_index_job[j]=last+self.num_tasks_job[j-1]
+            first_task_index_job[j]=last+self.num_tasks_per_job[j-1]
         self.first_task_index_job=first_task_index_job
         
         self.max_steps=get_max_steps(self,G.CRANE_UP_TIME,G.CRANE_DOWN_TIME,G.MAX_STEP_SCALE)
@@ -132,7 +117,4 @@ def get_max_steps(instance: Instance,crane_up_time=2,crane_down_time=2,scale=1):
             rt+=dt
             if instance.max_runtime<dt:
                 instance.max_runtime=dt
-
-            #print(task)
-    #print(rt)
     return round(rt*scale)
