@@ -10,6 +10,7 @@ Tank1:J1-3|9->19
 End:J1-5|28->29
 AGV1:J1-2|2->9 J1-4|19->28
 '''
+# git push origin --tags
 if __name__ == '__main__':
     cnt=3
 
