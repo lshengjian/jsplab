@@ -4,13 +4,7 @@ from collections import defaultdict
 import numpy as np
 from ..datadef import G
 
-# def greedy_select(job:Job,ms:List[Machine]):
-#     op_times=np.array(job.cur_task._runtimes)
-#     op_times[op_times<1]=1e10
-#     for i,t in enumerate(op_times):
-#         op_times[i]=t*(1+ms[i].utilization_rate(job._last_time))
-#     idxs=np.argsort(op_times)
-#     job.assign(ms[idxs[0]])
+
 
 class Instance:
     '''
@@ -48,6 +42,7 @@ class Instance:
 
 
     def setup(self,tasks:List[Task]):
+        self.max_steps,self.max_runtime=get_max_steps(tasks,self.machine_offsets)
         data=convert2fjsp_data(tasks)
         self.num_jobs = len(data)
         
@@ -84,7 +79,7 @@ class Instance:
             first_task_index_job[j]=last+self.num_tasks_per_job[j-1]
         self.first_task_index_job=first_task_index_job
         
-        self.max_steps=get_max_steps(self,G.CRANE_UP_TIME,G.CRANE_DOWN_TIME,G.MAX_STEP_SCALE)
+        
 
         
     def __str__(self) -> str:
@@ -92,22 +87,26 @@ class Instance:
 
 
 
-def get_max_steps(instance: Instance,crane_up_time=2,crane_down_time=2,scale=1):
+def get_max_steps(tasks:List[Task],offsets=[]):
+    crane_up_time=G.CRANE_UP_TIME
+    crane_down_time=G.CRANE_DOWN_TIME
+    scale=G.MAX_STEP_SCALE
     rt=0
-    for task in instance.tasks:
+    max_runtime=0
+    for task in tasks:
         if task.index%2==0:
             rt+=task.runtime
-            if instance.max_runtime<task.runtime:
-                instance.max_runtime=task.runtime
+            if max_runtime<task.runtime:
+                max_runtime=task.runtime
         else:#天车处理任务
-            pre=instance.tasks[task.index-1]
-            next=instance.tasks[task.index+1]
+            pre=tasks[task.index-1]
+            next=tasks[task.index+1]
             
             m1_idxs=pre.eligible_machines
             m2_idxs=next.eligible_machines
 
-            x1=instance.machine_offsets[m1_idxs[0]]#上个电镀作业的第一个机器位置
-            x2=instance.machine_offsets[m2_idxs[-1]]#下个电镀作业的最后一个机器位置
+            x1=offsets[m1_idxs[0]]#上个电镀作业的第一个机器位置
+            x2=offsets[m2_idxs[-1]]#下个电镀作业的最后一个机器位置
             if isinstance(x1,list):
                 x1=x1[0]
             if isinstance(x2,list):
@@ -115,6 +114,6 @@ def get_max_steps(instance: Instance,crane_up_time=2,crane_down_time=2,scale=1):
             dt=abs(x2-x1)+crane_up_time+crane_down_time# todo
             task.runtime=dt
             rt+=dt
-            if instance.max_runtime<dt:
-                instance.max_runtime=dt
-    return round(rt*scale)
+            if max_runtime<dt:
+                max_runtime=dt
+    return round(rt*scale),round(max_runtime)

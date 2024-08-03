@@ -23,16 +23,14 @@ class Event:
     
 @dataclass 
 class PushAway(Event):
-    pos: int
-    dir: int
-    @property
-    def data(self):
-        return f'{self.pos}({self.dir})'
+    x1: int
+    x2: int
 
-@dataclass 
-class TaskDelayed(Event):
-    plan_time: int
-    finished_time: int
-    @property
-    def data(self):
-        return f'{self.plan_time}->{self.finished_time}'
+
+# @dataclass 
+# class TaskDelayed(Event):
+#     plan_time: int
+#     finished_time: int
+#     @property
+#     def data(self):
+#         return f'{self.plan_time}->{self.finished_time}'

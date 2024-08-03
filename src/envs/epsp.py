@@ -32,17 +32,20 @@ class ElectroplateJobShopEnv(gym.Env):
         self.shop=shop
         self.min_num_job=min_num_job
         self.max_num_job=max_num_job
+        #self._makespan=0
         # reward parameters
-        self.reward_strategy ='mr2_reward'# 'dense_makespan_reward'
+        #self.reward_strategy ='mr2_reward'# 'dense_makespan_reward'
         self.reward_scale =  1
         self.mr2_reward_buffer: List = [] 
         self._state_obs: NDArray 
 
+    @property
+    def makespan(self):
+        return self.shop.last_time
+      
 
-       
 
-
-    def step(self, action: int)-> (List[float], Any, bool,bool, Dict):
+    def step(self, action: int)-> (List[float], float, bool,bool, Dict):
         """
         Step Function
 
@@ -95,7 +98,7 @@ class ElectroplateJobShopEnv(gym.Env):
             logger.error('cranes hited!')
         
         if done and reward>=0:
-            logger.info(f'makespan:{self.get_makespan()}')
+            logger.info(f'makespan:{self.makespan}')
 
         return observation, reward, done, time_out ,infos
 
@@ -106,6 +109,7 @@ class ElectroplateJobShopEnv(gym.Env):
         for id in product_ids:
             job_nums_dict[id]=np.random.randint(self.min_num_job,self.max_num_job+1)
 
+        #print(job_nums_dict)
         self.shop.reset(job_nums_dict)
         self.action_space: spaces.Discrete = spaces.Discrete(self.shop.instance.num_jobs) 
         #todo: num_jobs*num_machines
@@ -115,7 +119,7 @@ class ElectroplateJobShopEnv(gym.Env):
 
         self.num_steps=0
         self.last_mask: NDArray = np.zeros(len(self.shop.jobs), dtype=int)
-        self.makespan = 0
+        #self.makespan = 0
         action_mask = self.get_action_mask()
         return self.state_obs,{'mask': action_mask}
 
@@ -161,20 +165,30 @@ class ElectroplateJobShopEnv(gym.Env):
 
 
         # # normalization
-        max_runtime=self.shop.instance.max_runtime
+        max_runtime=self.shop.instance.max_runtime+G.EPS
         #print(f'max_runtime:{max_runtime}')
         processing_times_on_machines /= (len(self.shop.tasks) * max_runtime)
         processing_times_per_job /= (self.shop.instance.max_tasks_per_job * max_runtime)
         operation_time_of_next_task_per_job /= max_runtime
 
-        observation = np.concatenate([
-            processing_times_on_machines,
-            processing_times_per_job,
-            operation_time_of_next_task_per_job,
-            machines_for_next_task_per_job.flatten()
-        ])
+        # observation = np.concatenate([
+        #     processing_times_on_machines,
+        #     processing_times_per_job,
+        #     operation_time_of_next_task_per_job,
+        #     machines_for_next_task_per_job.flatten()
+        # ])
+        num_jobs=self.shop.num_jobs
+        num_machine=self.shop.num_machines
+        data=np.zeros((num_jobs+2,num_machine+2))
+        for i,m in self.shop.machines.items():
+            data[0,i]=m.offset/self.shop.instance.max_offset #todo for Transfer
+        data[1,:num_machine]=processing_times_on_machines
+        data[2:,num_machine]=processing_times_per_job
+        data[2:,num_machine+1]=operation_time_of_next_task_per_job 
+        data[2:,:num_machine]= machines_for_next_task_per_job  
 
-        self._state_obs = observation
+
+        self._state_obs = data
         # print(observation.shape)
         # print(observation)
         return self._state_obs
@@ -209,17 +223,17 @@ class ElectroplateJobShopEnv(gym.Env):
         :return: Reward
 
         """
-        if self.reward_strategy == 'dense_makespan_reward':
-            # dense reward for makespan optimization according to https://arxiv.org/pdf/2010.12367.pdf
-            reward = self.makespan - self.get_makespan()
-            self.makespan = self.get_makespan()
-        elif self.reward_strategy == 'sparse_makespan_reward':
-            reward = self.sparse_makespan_reward()
-        elif self.reward_strategy == 'mr2_reward':
-            reward = self.mr2_reward()
-        else:
-            raise NotImplementedError(f'The reward strategy {self.reward_strategy} has not been implemented.')
-
+        # if self.reward_strategy == 'dense_makespan_reward':
+        #     # dense reward for makespan optimization according to https://arxiv.org/pdf/2010.12367.pdf
+        #     reward = self._makespan - self.makespan
+        #     self._makespan = self.makespan
+        # elif self.reward_strategy == 'sparse_makespan_reward':
+        #     reward = self.sparse_makespan_reward()
+        # elif self.reward_strategy == 'mr2_reward':
+        #     reward = self.mr2_reward()
+        # else:
+        #     raise NotImplementedError(f'The reward strategy {self.reward_strategy} has not been implemented.')
+        reward = self.sparse_makespan_reward()
         reward *= self.reward_scale
 
         return reward
@@ -244,12 +258,11 @@ class ElectroplateJobShopEnv(gym.Env):
         :return: (int) sparse reward
 
         """
-        if not self.check_done():
-            reward = 1e10
-        else:
-            reward = self.get_makespan()
+        rt=1e10
+        if  self.check_done():
+            rt = self.makespan
 
-        return 1/reward
+        return 1/rt
 
     def mr2_reward(self) -> Any:
         """
@@ -261,7 +274,7 @@ class ElectroplateJobShopEnv(gym.Env):
         if not self.check_done():
             reward = 0
         else:
-            last_makespan = self.get_makespan()
+            last_makespan = self.makespan
             if len(self.mr2_reward_buffer) > 0:
 
                 percentile_to_beat = np.percentile(np.array(self.mr2_reward_buffer), 70)
@@ -294,8 +307,7 @@ class ElectroplateJobShopEnv(gym.Env):
         """
         return self.shop.check_done()
 
-    def get_makespan(self):
-        return round(self.shop.last_time)
+
 
 
     def debug(self):
@@ -308,7 +320,7 @@ class ElectroplateJobShopEnv(gym.Env):
     def replay(self):
         pause_time=1.0/G.FPS
         data=[]
-        steps=round(self.get_makespan())
+        steps=round(self.makespan)
         x1=self.shop.instance.min_offset
         x2=self.shop.instance.max_offset
         for agv in self.shop.cranes:

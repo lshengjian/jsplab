@@ -1,7 +1,7 @@
 from __future__ import annotations
 from collections import namedtuple,defaultdict
-from dataclasses import dataclass 
-from typing import List,Dict
+
+from typing import Dict
 from enum import IntEnum
 from .task import Task
 from ..datadef.events import *
@@ -26,7 +26,7 @@ class Machine:
         #self.offset=offset
         self.index=index
         self.name=name if len(name)>0 else f'M{index+1}'
-        self.sort_tasks:SortedDict[int,Task]=SortedDict()
+        self.sort_tasks:Dict[int,Task]=SortedDict()
         self.last_time=0
 
     def reset(self):

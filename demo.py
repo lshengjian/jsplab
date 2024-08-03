@@ -18,3 +18,5 @@ def test_shop():
     assert (obs<=1).all()
     assert obs.shape==(shop.num_jobs+2,shop.num_machines+2)
     #assert len(obs)==num_jobs+num_machines+num_jobs+num_jobs*num_machines
+if __name__ == '__main__':
+    test_shop()
