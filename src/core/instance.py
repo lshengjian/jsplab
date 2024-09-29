@@ -19,7 +19,7 @@ class Instance:
         self.machine_offsets:List[int]=offsets
         self.num_machines = len(self.tasks[0].machines)
 
-        product_ids=set(map(lambda t:t.product_index,tasks))
+        product_ids=set(map(lambda t:t.job_index,tasks))
         self.product_ids=product_ids
         xs=[]
         for x in offsets:
@@ -88,9 +88,9 @@ class Instance:
 
 
 def get_max_steps(tasks:List[Task],offsets=[]):
-    crane_up_time=G.CRANE_UP_TIME
-    crane_down_time=G.CRANE_DOWN_TIME
-    scale=G.MAX_STEP_SCALE
+    crane_up_time=G.HOIST_UP_TIME
+    crane_down_time=G.HOIST_DOWN_TIME
+    scale=1.5#G.MAX_STEP_SCALE
     rt=0
     max_runtime=0
     for task in tasks:

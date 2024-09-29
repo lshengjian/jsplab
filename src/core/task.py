@@ -8,31 +8,30 @@ __all__=[  'OpTime','Task','extend_tasks','convert2jsp_data','convert2fjsp_data'
 OpTime = namedtuple("OpTime", "machine duration")
 # Point = namedtuple('Point', ['x', 'y'], defaults=(0.0, 0.0))
 class Task:
-    def __init__(self, job_index: int, task_index: int,
-                 op_times: List[int] = None,product_index=0
+    def __init__(self, job_index: int, task_index: int,op_times: List[int] = None
                 ):
 
         # test for correct data type of required and throw type error otherwise
         if not isinstance(job_index, int) or not isinstance(task_index, int):
             raise TypeError("Job index and task index must be of type int.")
-        if job_index<product_index:
-            raise ValueError("Job index {job_index} should greater product index  {product_index}")
-        # required - don't touch after init
-        self.product_index=product_index
-        self.job_index = job_index #作业索引号，从0开始
-        self.index = task_index #任务索引号，从0开始
-        self.is_last=False
+        # if job_index<product_index:
+        #     raise ValueError("Job index {job_index} should greater product index  {product_index}")
 
-        # optional - don't touch after init
-        self.runtime = 0  #没有开始前存可能的最长加工时间，开始时记录实际加工的时间
-        
-        self._runtimes = [] #保存每个机器的实际加工时间
-        self.machines = op_times 
         # optional
+        #self.product_index=product_index
+        self.is_last=False
+        self.runtime = 0  #没有开始前存可能的最长加工时间，开始时记录实际加工的时间
         self.time_started = -1
         self.time_finished = -1
         self.selected_machine = -1
-        self.done=False
+        self.done=False        
+        # required - don't touch after init
+        
+        self.job_index = job_index #作业索引号，从0开始
+        self.index = task_index #作业中的任务索引号，从0开始
+        self._runtimes = [] #保存每个机器的实际加工时间
+        self.machines = op_times 
+
 
 
     @property 
@@ -42,7 +41,7 @@ class Task:
         return data
     
     @machines.setter
-    def machines(self,op_times):
+    def machines(self,op_times:List[int]):
         data=np.array(op_times)
         times=np.where(data<0,np.zeros_like(data),data)
         self._runtimes=times
@@ -54,7 +53,6 @@ class Task:
         tag=f'J{self.job_index+1}-{self.index+1}|'
         msg1=f'{tag}{self.runtime}'
         msg2=f'{tag}{self.time_started}->{self.time_finished}'
-
         return msg2 if self.done else msg1
 
     @property
@@ -63,7 +61,6 @@ class Task:
         ms=map(lambda idx:idx+1,m_idxs)
         ts=self._runtimes[m_idxs]
         data=str(list(zip(ms,ts))).replace(' ','')
-        #flag='Y' if self.is_last else 'X'
         return f"J{self.job_index+1}-{self.index+1}|{self.runtime:.0f},{data}"
     
 def extend_tasks(tasks:List[Task],nums:Dict[int,int]={}):
@@ -71,15 +68,15 @@ def extend_tasks(tasks:List[Task],nums:Dict[int,int]={}):
     通过流程模板创建多个具体作业流程
     '''
     proc_ids=set(map(lambda task:task.job_index,tasks))
-    job_tasks={j_id:list(filter(lambda task:task.job_index==j_id,tasks)) for j_id in proc_ids}
+    product_tasks={p_id:list(filter(lambda task:task.job_index==p_id,tasks)) for p_id in proc_ids}
     
     cnt=0
     rt:List[Task]=[]
-    for j_id,tasks in job_tasks.items():
+    for j_id,tasks in product_tasks.items():
         num_jobs=nums.get(j_id,1)
         for _ in range(num_jobs):
             for task in tasks:
-                t2=Task(cnt,task.index,task._runtimes,j_id) #todo : copy()
+                t2=Task(cnt,task.index,task._runtimes) 
                 rt.append(t2)
             cnt+=1
     return rt

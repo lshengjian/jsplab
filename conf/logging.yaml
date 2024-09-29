@@ -16,16 +16,16 @@ handlers:
   file:
     class : logging.handlers.RotatingFileHandler
     formatter: precise
-    filename: ./outputs/epsim.log
+    filename: ./logs/jsplog.log
     encoding: utf-8
     maxBytes: 120000
     backupCount: 3
 
 loggers:
-    # machine:
-    #     level: INFO
-    #     handlers: [file]
-    #     propagate: no         
-root:
+  hoist:
     level: DEBUG
     handlers: [console]
+    propagate: no         
+root:
+  level: INFO
+  handlers: [file]

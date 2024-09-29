@@ -15,18 +15,18 @@ class MachineType(IntEnum):
     Comm = 0 #保留不用
     Buff = 1 #暂存
     Tank = 2 #加工
-    OverHeadCrane = 4 #同时具备垂直、横向运动的天车
-    Transfer=8 #只能垂直或横向移动的转运小车
+    Hoist = 4 #同时具备垂直、左右运动的天车
+    Transfer=8 #只能垂直或前后移动的转运小车
     
 
 class Machine:
-    def __init__(self,index=0,offset=0,name=''):
-        
-        self._offset=offset
-        #self.offset=offset
-        self.index=index
+    def __init__(self,index=0,offsets=[0],name=''):
+        self.offsets=[offsets] if not isinstance(offsets, (list, tuple)) else offsets #
+        print(self.offsets)
+        self.index=index 
         self.name=name if len(name)>0 else f'M{index+1}'
-        self.sort_tasks:Dict[int,Task]=SortedDict()
+
+        self.sort_tasks:Dict[int,Task]=SortedDict() #key：任务开始时间
         self.last_time=0
 
     def reset(self):
@@ -35,18 +35,15 @@ class Machine:
 
     @property
     def offset(self):
-        return self._offset
-     
+        return self.offsets[0]      
     def __str__(self):
-        return f'{self.name}[{self._offset}|{self.utilization_rate()*100:.0f}%]'
+        return f'{self.name}[{self.offset}|{self.utilization_rate()*100:.0f}%]'
 
     def get_machine_type(self)->MachineType:
         mts=MachineType.__members__
         cls_name=self.__class__.__name__
         return mts[cls_name]
     
-
-
     def utilization_rate(self,cur_time:int=0): 
         total=0
         for task in self.sort_tasks.values():
@@ -102,16 +99,7 @@ class Tank(Machine):
     pass
 
 class Transfer(Machine):
-    def __init__(self,index=0,offsets=[],name=''):
-        super().__init__(index,offsets,name)
-        self.x1=offsets[0]
-        self.x2=offsets[1]
-        self._offset=offsets[0]
-    def reset(self):
-        self.last_time=0 
-        self._offset=self.x1
-        
     def assign(self,task:Task)->int: 
         rt=super().assign(task)
-        self.last_time+=task.runtime#go back to begin offset
+        self.last_time+=task.runtime#go back to begin offset 有可能要等待另一区域的天车过来取走
         return rt

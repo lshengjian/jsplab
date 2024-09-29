@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import List,Dict
 from .task import Task
 from .machine import Machine
-from .crane import OverHeadCrane
+from .hoist import Hoist
 import logging
 
 logger = logging.getLogger(__name__.split('.')[-1])
@@ -36,7 +36,7 @@ class Job:
         task.is_last=True
 
 
-    def assign(self,crane:OverHeadCrane,pre:Machine,next:Machine=None):
+    def assign(self,crane:Hoist,pre:Machine,next:Machine=None):
         task_index=self._cur_task_index
         logger.debug(f'pre:{pre},agv:{crane},next:{next}')
         assert task_index<len(self.tasks) and task_index%2==0
@@ -54,7 +54,7 @@ class Job:
             start=pre.assign(op_task,is_mock=True)-op_task.runtime #估计分配
             start=max(start,self.last_time)
             t0=crane.last_time
-            dt1,dt2=crane.move(x1,x2,start,op_task.runtime)#这里会修改last_time
+            dt1,dt2=crane.pickup_dropdown(x1,x2,start,op_task.runtime)#这里会修改last_time
             t1=crane.last_time-dt2
             crane.last_time=t0
             op_task.time_finished=t1

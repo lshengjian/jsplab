@@ -1,8 +1,8 @@
 FPS: 4
 EPS: 1e-8
-MAX_STEP_SCALE: 1.8
-CRANE_HEIGHT: 2 #天车高度
-CRANE_UP_TIME: 2 #天车提升时间
-CRANE_DOWN_TIME: 2 #天车下落时间
-CRANE_SAFE_DISTANCE: 2 #天车安全距离
-CRANE_VELOCITY: [1.0,1.0] #天车默认移动速度
+MIN_DISTANCE : 0.25 #系统中的距离必须是该长度的整数倍
+HOIST_HEIGHT: 2 #天车高度是多少系统单位
+HOIST_UP_TIME: 3 #天车提升时间
+HOIST_DOWN_TIME: 3 #天车下落时间
+HOIST_SAFE_DISTANCE: 2 #天车安全距离
+HOIST_VELOCITY: [1.0,1.0] #天车默认移动速度

@@ -3,7 +3,7 @@ from rich.text import Text
 from .util import view_solution,task_type,assigned_task_type,get_assigned,SolutionPrinter
 from collections import defaultdict
 from ...utils import console
-from src.core.crane_state import make_crane_states
+from src.core.hoist_state import make_hoist_states
 from src.core import convert2fjsp_data,Instance,get_max_steps
 from typing import  List,Dict,Tuple
 import time
@@ -207,7 +207,7 @@ class OrToolSolver:
             agv_idx=i+self.agv_start
             ds:List[assigned_task_type]=data[agv_idx]
             ts=[(d.start,d.start+d.duration) for  d in ds]
-            rt2[i]=make_crane_states(rt[i],ts)
+            rt2[i]=make_hoist_states(rt[i],ts)
         return rt,rt2
     
     def print_info(self,info):

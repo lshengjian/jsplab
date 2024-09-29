@@ -6,7 +6,7 @@ import pandas as pd
 from pathlib import Path
 from . import Task,Instance
 from ..datadef import G
-from ..utils.split import *
+from ...jsplab.utils.split import *
 __all__=['IParse','ExcelFileParser','StandardFjspFileParser','StandardJspFileParser' ]
 # 定义一个接口类
 class IParse(ABC):
@@ -35,7 +35,7 @@ class ExcelFileParser(IParse):
                 if len(ss)==3:
                     offsets.append([int(ss[1]),int(ss[2])])
                 else:
-                    offsets.append(int(ss[1]))
+                    offsets.append([int(ss[1])])
                 machine_names.append(ss[0])
                 if ss[0].startswith('AGV'):
                     agv_idxs.append(i)
@@ -58,14 +58,14 @@ class ExcelFileParser(IParse):
             if first_agv_idx!=None:
                 ms[first_agv_idx:]=0
             #idx=np.argmax(ms)
-            task1=Task(job_idx,task_idx,ms,job_idx)
+            task1=Task(job_idx,task_idx,ms)
             tasks.append(task1)
             #print(task1)
             if first_agv_idx!=None:
                 agvs=row[1:].copy()
                 agvs[:first_agv_idx]=0
                 if sum(agvs)>0:
-                    task2=Task(job_idx,task_idx+1,agvs,job_idx)
+                    task2=Task(job_idx,task_idx+1,agvs)
                     task_idxs[job_idx]+=1
                     tasks.append(task2)
                     #print(task2)

@@ -4,8 +4,8 @@ import numpy as np
 
 from gymnasium import spaces
 import gymnasium as gym
-from src.core import Task,OverHeadCrane,JobShop
-from src.core.crane_state import make_crane_states
+from src.core import Task,Hoist,JobShop
+from src.core.hoist_state import make_hoist_states
 from src.utils import console
 from rich.text import Text
 from src.datadef import G
@@ -328,9 +328,9 @@ class ElectroplateJobShopEnv(gym.Env):
             moves=[]
             for task in tasks:
                 moves.append((task.time_started,task.time_finished))
-            flags=make_crane_states(agv.pos,moves,2,2)
+            flags=make_hoist_states(agv.history,moves,2,2)
             flags=list(map(str,flags))
-            data.append((agv.pos,flags))
+            data.append((agv.history,flags))
 
         offsets=self.shop.instance.machine_offsets
         agv_start=self.shop.instance.first_crane_index 

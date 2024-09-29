@@ -4,8 +4,9 @@ from sortedcontainers import SortedDict
 
 #pip install sortedcontainers
 def test_combination():
-    data=list(itertools.product([0, 1], repeat=3))
+    data=list(itertools.product([0, 1], repeat=3)) # [0,1] [0,1] [0,1]各取一个的组合是 2*2*2=8
     assert 8==len(data) and (0,0,0)==data[0] and   (1,1,1)==data[7]
+
 def test_orderdict():
     data = SortedDict({1:3,3:1,2:2}) 
     assert list(data.keys()) ==[1,2,3]

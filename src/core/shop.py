@@ -2,7 +2,7 @@
 from __future__ import annotations
 from typing import  List,Dict
 from .machine import Machine,Tank,Transfer
-from .crane import OverHeadCrane
+from .hoist import Hoist
 from .instance import Instance
 from .task import Task,extend_tasks
 from ..datadef import G
@@ -19,7 +19,7 @@ class JobShop:
         self.machines:Dict[int,Machine]={}
         self.machine_indexs_locked=set()
 
-        self.cranes:List[OverHeadCrane]=[]
+        self.cranes:List[Hoist]=[]
         self.jobs:Dict[int,Job]={}
         
     @property
@@ -72,14 +72,15 @@ class JobShop:
         ins=self.instance
         for i in range(ins.num_machines):
             if i<ins.first_crane_index:
-                self.machines[i]=Tank(i,ins.machine_offsets[i],ins.machine_names[i])
-            else:
-                if  isinstance(ins.machine_offsets[i],list):
+                
+                if ins.machine_names[i].startswith('Tansf'):
                     self.machines[i]=Transfer(i,ins.machine_offsets[i],ins.machine_names[i])
                 else:
-                    self.machines[i]=OverHeadCrane(i,ins.machine_offsets[i],ins.machine_names[i],ins.max_steps,ins.min_offset,ins.max_offset)
-                    #todo left canot go to max_offset
-                    self.cranes.append(self.machines[i])
+                    self.machines[i]=Tank(i,ins.machine_offsets[i],ins.machine_names[i])
+            else:
+                self.machines[i]=Hoist(i,ins.machine_offsets[i],ins.machine_names[i],ins.max_steps)
+                #todo left canot go to max_offset
+                self.cranes.append(self.machines[i])
 
 
         
@@ -115,7 +116,7 @@ class JobShop:
             return x
         for agv in self.cranes:
             if agv.index==task.selected_machine and not task.is_last:
-                return agv.pos[step]
+                return agv.history[step]
         return -1
 
     def is_safe(self,max_time:int)->bool:
@@ -125,9 +126,9 @@ class JobShop:
         for t in range(max_time):
             for i in range(num_agvs-1):
                 j=i+1
-                dis=G.CRANE_SAFE_DISTANCE
-                x1=cranes[i].pos[t]
-                x2=cranes[j].pos[t]
+                dis=G.HOIST_SAFE_DISTANCE
+                x1=cranes[i].history[t]
+                x2=cranes[j].history[t]
                 if abs(x1-x2) < dis or x1+2>x2:
                     logger.debug(f'time:{t} {cranes[i]} pos:{x1} hit {cranes[j]} pos:{x2}')
                     cranes[i].debug(max_time)
