@@ -2,12 +2,12 @@ from jsplab.utils import World,Processor
 from ..components import Machine,Moveable,MoveTarget,CanUpDown,Job,Task
 eps=1e-3
 class SysDispatch(Processor):
-    def select_hoist(self,tank:Machine,job:Job,task:Task):
+    def select_hoist(self,tank_ent:int,tank:Machine,job:Job,task:Task):
         esper:World=self.world
         min_dis=1e10
         hoist=None
         hoist_ent=None
-        for ent, (h, updown,data) in esper.get_components(Machine, CanUpDown,Moveable):
+        for ent, (h, _,_) in esper.get_components(Machine, CanUpDown,Moveable):
             if not h.is_free:
                 continue
             # flag=False
@@ -26,15 +26,15 @@ class SysDispatch(Processor):
                 hoist=h
                 hoist_ent=ent
 
-            if hoist!=None:
-                esper.add_component(hoist_ent,MoveTarget(tank.offset))
-                task.selected_machine_id=tank.id
+        if hoist!=None:
+            esper.add_component(hoist_ent,MoveTarget(tank.offset,tank_ent))
+            task.selected_machine_id=tank.id
 
     def process(self,delta_time,total_time):
         esper:World=self.world
         for ent, (machine, job,task) in esper.get_components(Machine,Job,Task):
             if task.selected_machine_id<0:
-                self.select_hoist(machine,job,task)
+                self.select_hoist(ent,machine,job,task)
 
 
 

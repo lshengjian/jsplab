@@ -3,7 +3,7 @@ from jsplab.utils import World
 class Simulator:
     def __init__(self):
         self.world=World()
-        self.world.set_handler('on_arrived', self.tran_arrived)
+        self.world.set_handler('on_arrived', self.on_arrived)
         #self.world.set_handler('on_end', self.dispaly)
         
         self.machines={}
@@ -34,6 +34,7 @@ class Simulator:
         self.world.add_processor(SysRecord())
         self.world.add_processor(SysMove(),priority=1)
         self.world.add_processor(SysDispatch(),priority=2)
+        self.world.add_processor(SysPickup(),priority=1)
 
 
 
@@ -45,12 +46,26 @@ class Simulator:
         start=self.machines[0]
         esper.add_component(start,Job(0,'A',2))
         esper.add_component(start,Task([5,6]))
-        print(esper.components_for_entity(start))
+        #(esper.components_for_entity(start))
 
 
 
-    def tran_arrived(self,ent,t):
-        print(f"tran_arrived:{t.to_offset}")
+    def on_arrived(self,ent:int,target:MoveTarget):
+
+        if self.world.has_component(ent,CanUpDown):
+            target_ent:int=target.tank_ent
+            tank:Machine=self.world.component_for_entity(target_ent,Machine)
+            if self.world.has_component(target_ent,Job):
+                self.world.add_component(ent,Pickup())
+                job=self.world.component_for_entity(target_ent,Job)
+                task=self.world.component_for_entity(target_ent,Task)
+                self.world.remove_component(target_ent,Job)
+                self.world.remove_component(target_ent,Task)
+                self.world.add_component(ent,job)
+                self.world.add_component(ent,task)
+                print(self.world.components_for_entity(ent))
+
+        #print(f"tran_arrived:{target.to_offset}")
 
     def dispaly(self,ent):
         rt:Trajectory=self.world.component_for_entity(ent,Trajectory)
@@ -63,3 +78,4 @@ class Simulator:
         for i in range(20):
             t+=dt
             self.world.process(dt,t)
+        self.dispaly(self.machines[21])

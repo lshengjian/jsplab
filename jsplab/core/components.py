@@ -7,6 +7,9 @@ class Trajectory:
     def __init__(self):
         self.history=[]
         
+    def __str__(self):
+        return f"{self.history}"
+        
 class Task:
     def __init__(self,offsets=[],op_time=10):
         self.op_machine_offsets=offsets
@@ -47,20 +50,21 @@ class CanUpDown:
 @component
 class MoveTarget:
     to_offset:float=0
+    tank_ent:int=-1
 
 
 @component
 class Pickup:
-    pass
+    timer:float=0
 @component
 class Dropdown:
-    pass
+    timer:float=0
 
 @component
 class Job:
     index:int=0
     code:str='A'
-    steps:int=3
-    step_index=0
+    num_tasks:int=3
+    cur_task_index_in_job=0
 
 
