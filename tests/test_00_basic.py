@@ -1,7 +1,35 @@
 import itertools
 import numpy as np
 from sortedcontainers import SortedDict  
+from dataclasses import dataclass
+from typing import List
 
+@dataclass
+class Address:
+    street: str
+    city: str
+
+
+@dataclass
+class PersonWithAddresses:
+    name: str
+    age: int
+    addresses: List[Address]
+
+def test_dict2data():
+   person_dict = {
+        'name': 'Bob',
+        'age': 40,
+        'addresses': [
+            {'street': 'First St', 'city': 'City1'},
+            {'street': 'Second St', 'city': 'City2'}
+        ]
+    }
+   address_dicts = person_dict['addresses']
+   addresses = [Address(**address_dict) for address_dict in address_dicts]
+   person = PersonWithAddresses(**{**person_dict, 'addresses': addresses})
+   assert 'Bob'==person.name and 40==person.age and 2==len(person.addresses)
+   #print(person)
 #pip install sortedcontainers
 def test_combination():
     data=list(itertools.product([0, 1], repeat=3)) # [0,1] [0,1] [0,1]各取一个的组合是 2*2*2=8

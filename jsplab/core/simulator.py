@@ -1,5 +1,8 @@
 from jsplab.core import *
 from jsplab.utils import World
+import logging
+logger = logging.getLogger(__name__.split('.')[-1])
+
 class Simulator:
     def __init__(self):
         self.world=World()
@@ -7,34 +10,51 @@ class Simulator:
         #self.world.set_handler('on_end', self.dispaly)
         
         self.machines={}
+        self.machines_entity={}
+
         self.jobs={}
         self.setup()
 
     def setup(self):
         '''
         0 1 2 3 4 5 6 7 8 9 0 T
-        S     H   t1t2      1
-                  t4t3  H   2
+        S     H   t1        1
+                  t2    H   2
         3 2 1 0 9 8 7 6 5 4 3  
         E
         '''
         esper=self.world
-        self.machines[0]=esper.create_entity(Machine(0))
-        self.machines[1]=esper.create_entity(Machine(1,23,23))
+        m=Machine(0,0,0)
+        self.machines[m.id]=m
+        self.machines_entity[m.id]=esper.create_entity(m,StartBuff())
+        m=Machine(99,23,23)
+        self.machines[m.id]=m
+        self.machines_entity[m.id]=esper.create_entity(m,EndBuff())
 
-        self.machines[11]=esper.create_entity(Machine(11,5,5))
-        self.machines[12]=esper.create_entity(Machine(12,6,6))
-        self.machines[13]=esper.create_entity(Machine(13,17,17))
-        self.machines[14]=esper.create_entity(Machine(14,18,18))
+        m=Machine(11,5,5)
+        self.machines[m.id]=m
+        self.machines_entity[m.id]=esper.create_entity(m,OpTank())
+        m=Machine(12,18,18)
+        self.machines[m.id]=m
+        self.machines_entity[m.id]=esper.create_entity(m,OpTank())
 
-        self.machines[21]=esper.create_entity(Machine(21,3,3),Moveable(0,10),CanUpDown(),Trajectory())
-        self.machines[22]=esper.create_entity(Machine(22,15,15),Moveable(13,23),CanUpDown(),Trajectory())
+        m=Machine(21,3,3)
+        self.machines[m.id]=m
+        self.machines_entity[m.id]=esper.create_entity(m,Hoist(),Moveable(0,10),Trajectory())
+        m=Machine(22,15,15)
+        self.machines[m.id]=m
+        self.machines_entity[m.id]=esper.create_entity(m,Hoist(),Moveable(13,23),Trajectory())
 
-        self.machines[31]=esper.create_entity(Machine(31,10,10),Moveable(10,13),Trajectory())
+        m=Machine(31,10,10)
+        self.machines[m.id]=m
+        self.machines_entity[m.id]=esper.create_entity(m,Moveable(10,13),Trajectory())
+
         self.world.add_processor(SysRecord())
         self.world.add_processor(SysMove(),priority=1)
         self.world.add_processor(SysDispatch(),priority=2)
         self.world.add_processor(SysPickup(),priority=1)
+        self.world.add_processor(SysDropdown(),priority=1)
+        self.world.add_processor(SysOperate(),priority=9)
 
 
 
@@ -43,33 +63,39 @@ class Simulator:
         #self.jobs[0]=esper.create_entity(j1,j1_1)
     def put_job(self):
         esper=self.world
-        start=self.machines[0]
-        esper.add_component(start,Job(0,'A',2))
-        esper.add_component(start,Task([5,6]))
+        start=self.machines_entity[0]
+        esper.add_component(start,WithTask())
+        logger.debug('add job')
         #(esper.components_for_entity(start))
 
 
 
-    def on_arrived(self,ent:int,target:MoveTarget):
-
-        if self.world.has_component(ent,CanUpDown):
-            target_ent:int=target.tank_ent
-            tank:Machine=self.world.component_for_entity(target_ent,Machine)
-            if self.world.has_component(target_ent,Job):
-                self.world.add_component(ent,Pickup())
-                job=self.world.component_for_entity(target_ent,Job)
-                task=self.world.component_for_entity(target_ent,Task)
-                self.world.remove_component(target_ent,Job)
-                self.world.remove_component(target_ent,Task)
-                self.world.add_component(ent,job)
-                self.world.add_component(ent,task)
-                print(self.world.components_for_entity(ent))
+    def on_arrived(self,move_ent:int,target:MoveTarget):
+        
+        data=self.world.try_component(move_ent,Hoist)
+        m=self.world.try_component(move_ent,Machine)
+        if data!=None:
+            if self.world.has_component(move_ent,WithTask) and data.offset_y==2:
+                self.world.add_component(move_ent,Dropdown())
+                logger.info(f'{m} Dropdown')
+            else:
+                tank_ent:int=target.tank_ent
+                #tank:Machine=self.world.component_for_entity(target_ent,Machine)
+                if self.world.has_component(tank_ent,WithTask):
+                    self.world.add_component(move_ent,Pickup())
+                    logger.info(f'{m} Pickup')
+                    task=self.world.component_for_entity(tank_ent,WithTask)
+                    task.next_op_name='todo'
+                    # todo edit task
+                    self.world.remove_component(tank_ent,WithTask)
+                    self.world.add_component(move_ent,task)
+                
 
         #print(f"tran_arrived:{target.to_offset}")
 
     def dispaly(self,ent):
-        rt:Trajectory=self.world.component_for_entity(ent,Trajectory)
-        print(rt.history)
+        for c in self.world.components_for_entity(ent):
+            print(c)
         
 
     def play(self):
@@ -78,4 +104,4 @@ class Simulator:
         for i in range(20):
             t+=dt
             self.world.process(dt,t)
-        self.dispaly(self.machines[21])
+        self.dispaly(self.machines_entity[21])

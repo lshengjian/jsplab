@@ -11,7 +11,6 @@ handlers:
   console:
     class : logging.StreamHandler
     formatter: brief
-    level   : INFO
     stream  : ext://sys.stdout
   file:
     class : logging.handlers.RotatingFileHandler
@@ -22,10 +21,10 @@ handlers:
     backupCount: 3
 
 loggers:
-  hoist:
-    level: DEBUG
-    handlers: [console]
+  simulator:
+    level: DEBUG  
+    handlers: [console,file]
     propagate: no         
 root:
-  level: INFO
-  handlers: [file]
+  level: DEBUG  # DEBUG INFO ERROR
+  handlers: [console]

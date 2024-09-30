@@ -1,6 +1,4 @@
 import numpy as np
-from logging import config
-import yaml
 from omegaconf import OmegaConf
 from  pathlib import Path
 from  importlib import import_module
@@ -57,10 +55,8 @@ def load_config(fname:str):
     fpath=Path(__file__).parent.parent.parent/f"{fname}"
     return OmegaConf.load(fpath)
 
-with open(file=Path(__file__).parent.parent.parent/"conf/logging.yaml", mode='r', encoding="utf-8") as file:
-    logging_yaml = yaml.load(stream=file, Loader=yaml.FullLoader)
-    config.dictConfig(logging_yaml)
-    #logger = logging.getLogger(__name__.split('.')[-1])
+
+
     
 
 

@@ -1,0 +1,4 @@
+prod_code,op_key,op_time,min_time,max_time
+A,水洗,40,30,60
+B,镀铜,70,67,73
+B,水洗,50,40,60
