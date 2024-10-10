@@ -52,3 +52,9 @@ def test_orderdict():
 def test_nonzero():
     idxs=np.nonzero([0,1.5,2])[0] # olny one dimetion
     assert [1,2]==idxs.tolist()
+
+def test_splits():
+    data:str='1~2'
+    assert 2==len(data.split('~'))
+    data:str='12'
+    assert 1==len(data.split('~'))

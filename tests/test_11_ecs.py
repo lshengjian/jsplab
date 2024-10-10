@@ -109,7 +109,7 @@ def dispaly(esper,ent):
 
 '''
 
-def test_read_global_data():
+def test_ecs():
     esper=World()
     esper.set_handler('on_tran_arrived', tran_arrived)
     esper.set_handler('on_tran_back', tran_back)

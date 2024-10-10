@@ -7,14 +7,15 @@ class SysOperate(Processor):
     def process(self,delta_time,total_time):
         esper:World=self.world
 
-        for ent, (m, task) in esper.get_components(Machine, WithTask):
-            if esper.has_component(ent,Moveable):
-                continue
+        for ent, (m,tank, task) in esper.get_components(Machine, Tank,Task):
+            
             task.timer+=delta_time
-            if (task.max_time<1 or task.timer>task.duration) and not esper.has_component(ent,NeedOut):
-                esper.add_component(ent,NeedOut())
-                logging.info(f'[{m}] requst out: {task}')
-
-            if task.timer>task.max_time:
-                esper.dispatch_event('on_fail',m,task)
+            if task.duration>0 and task.timer>task.duration*1.2:
+                esper.dispatch_event('on_fail',ent)
                 break
+            if (task.duration<1 or task.timer>task.duration):
+                if esper.has_component(ent,RequestPickup)==False:
+                    esper.add_component(ent,RequestPickup())
+                    logging.info(f'{m} Request Pickup: {task}')
+
+

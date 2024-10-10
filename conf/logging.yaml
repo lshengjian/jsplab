@@ -21,10 +21,18 @@ handlers:
     backupCount: 3
 
 loggers:
+  dispatch:
+    level: DEBUG  
+    handlers: [console]
+    propagate: no 
+  move:
+    level: DEBUG  
+    handlers: [console]
+    propagate: no 
   simulator:
     level: DEBUG  
     handlers: [console,file]
     propagate: no         
 root:
-  level: DEBUG  # DEBUG INFO ERROR
+  level: INFO  # DEBUG INFO ERROR
   handlers: [console]

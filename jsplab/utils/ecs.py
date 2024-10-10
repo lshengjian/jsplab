@@ -346,7 +346,8 @@ class World:
         Raises a KeyError if either the given entity or Component type does
         not exist in the database.
         """
-        self._components[component_type].discard(entity)
+        #self._components[component_type].discard(entity)
+        self._components[component_type].remove(entity)
 
         if not self._components[component_type]:
             del self._components[component_type]
@@ -381,20 +382,20 @@ class World:
             return self._get_component_cache.setdefault(component_type, list(self._get_component(component_type)))
 
 
-    @_overload
-    def get_components(self,__c1: _Type[_C], __c2: _Type[_C2]) -> _List[_Tuple[int, _Tuple[_C, _C2]]]:
-        ...
+    # @_overload
+    # def get_components(self,__c1: _Type[_C], __c2: _Type[_C2]) -> _List[_Tuple[int, _Tuple[_C, _C2]]]:
+    #     ...
 
 
-    @_overload
-    def get_components(self,__c1: _Type[_C], __c2: _Type[_C2], __c3: _Type[_C3]) -> _List[_Tuple[int, _Tuple[_C, _C2, _C3]]]:
-        ...
+    # @_overload
+    # def get_components(self,__c1: _Type[_C], __c2: _Type[_C2], __c3: _Type[_C3]) -> _List[_Tuple[int, _Tuple[_C, _C2, _C3]]]:
+    #     ...
 
 
-    @_overload
-    def get_components(self,__c1: _Type[_C], __c2: _Type[_C2], __c3: _Type[_C3], __c4: _Type[_C4]) -> _List[
-                    _Tuple[int, _Tuple[_C, _C2, _C3, _C4]]]:
-        ...
+    # @_overload
+    # def get_components(self,__c1: _Type[_C], __c2: _Type[_C2], __c3: _Type[_C3], __c4: _Type[_C4]) -> _List[
+    #                 _Tuple[int, _Tuple[_C, _C2, _C3, _C4]]]:
+    #     ...
 
 
     def get_components(self,*component_types: _Type[_Any]) -> _Iterable[_Tuple[int, _Tuple[_Any, ...]]]:

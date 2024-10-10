@@ -1,6 +1,7 @@
 import pyglet
-import esper
-
+from jsplab.utils import World,Processor
+from pyglet.shapes import Rectangle
+esper=World()
 
 FPS = 60
 RESOLUTION = 720, 480
@@ -16,8 +17,8 @@ class Velocity:
 
 
 class Renderable:
-    def __init__(self, sprite):
-        self.sprite = sprite
+    def __init__(self, sprite:Rectangle):
+        self.sprite:Rectangle = sprite
         self.w = sprite.width
         self.h = sprite.height
 
@@ -25,7 +26,7 @@ class Renderable:
 ################################
 #  Define some Processors:
 ################################
-class MovementProcessor:
+class MovementProcessor(Processor):
     def __init__(self, minx, maxx, miny, maxy):
         super().__init__()
         self.minx = minx
@@ -43,7 +44,7 @@ class MovementProcessor:
             new_y = max(self.miny, rend.sprite.y + vel.y)
             new_x = min(self.maxx - rend.w, new_x)
             new_y = min(self.maxy - rend.h, new_y)
-            rend.sprite.position = new_x, new_y, rend.sprite.z
+            rend.sprite.position = new_x, new_y
 
 
 ###############################################
@@ -57,18 +58,15 @@ batch = pyglet.graphics.Batch()
 # Initialize Esper world, and create a "player" Entity with a few Components:
 player = esper.create_entity()
 esper.add_component(player, Velocity(x=0, y=0))
-player_image = pyglet.resource.image("redsquare.png")
-esper.add_component(player, Renderable(sprite=pyglet.sprite.Sprite(img=player_image,
-                                                                   x=100,
-                                                                   y=100,
-                                                                   batch=batch)))
+player_image =Rectangle(400,300,100,100, color=(0,255, 0), batch = batch)
+player_image.position
+#shapes.Circle(x = 400, y = 300, radius = 100, segments = 30, color=(255, 0, 0), batch = batch) #pyglet.resource.image("redsquare.png")
+esper.add_component(player, Renderable(sprite=player_image ))
 # Another motionless Entity:
 enemy = esper.create_entity()
-enemy_image = pyglet.resource.image("bluesquare.png")
-esper.add_component(enemy, Renderable(sprite=pyglet.sprite.Sprite(img=enemy_image,
-                                                                  x=400,
-                                                                  y=250,
-                                                                  batch=batch)))
+enemy_image =Rectangle(500,300,100,100, color=(0,0,255), batch = batch)
+#enemy_image = pyglet.resource.image("bluesquare.png")
+esper.add_component(enemy, Renderable(sprite=enemy_image))
 
 # Create some Processor instances, and asign them to the World to be processed:
 movement_processor = MovementProcessor(minx=0, miny=0, maxx=RESOLUTION[0], maxy=RESOLUTION[1])
