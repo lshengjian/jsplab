@@ -1,4 +1,4 @@
-from jsplab.core.hoist import Hoist,HoistCfg
+from jsplab.core.engine import Hoist,HoistCfg
 
 
 def test_ETA():

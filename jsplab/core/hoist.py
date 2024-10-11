@@ -1,69 +1,73 @@
-from sortedcontainers import SortedDict  
-from typing import List
-from collections import namedtuple
+from jsplab.cbd import IState,FSM,Component,EventManager
 
-import logging,math
-logger = logging.getLogger(__name__.split('.')[-1])
+class Hoist(Component):
+    def __init__(self):
+        super().__init__()
+        self.center:EventManager=None
+        self.fsm=FSM()
+        self.x:float=0
+        self.y:float=0
 
+        self.speed:float=1
+        self.speed_y:float=0.25
+        self.carring=None
+        self.work_time=0
 
-HoistCfg = namedtuple("HoistCfg", "offset a1 a2 speed code group min_offset max_offset down_time up_time")
-class Hoist:
-    def __init__(self,cfg:HoistCfg=None):
-        self.cfg:HoistCfg=cfg
-        self.offset = 0.0 if cfg is None else cfg.offset # 加速度
-        self.a1 = 1.0 if cfg is None else cfg.a1 # 加速度
-        self.a2 = 1.0 if cfg is None else cfg.a2 # 减速度
-        self.V = 1.0  if cfg is None else cfg.speed# 稳定速度
-        assert self.a1>0 and self.a2>0 and self.V>0
-        # 计算加速和减速阶段的时间
-        T1 = self.V / self.a1
-        T2 = self.V / self.a2
-        D1=0.5*self.V*T1
-        D2=0.5*self.V*T2
-        self.D=D1+D2 #临近距离
-        self.T1=T1
-        self.T2=T2
-    def __str__(self):
-        return f"{self.cfg.code}|{self.offset} D:{self.D} V:{self.V} T1:{self.T1} T2:{self.T2}"
-    def plan(self,to_offset:float,t:float):
-        target_dis:float=abs(to_offset-self.offset)
-        dis=0
-        if target_dis>=self.D:
-            t2=(target_dis-self.D)/self.V #匀速运动时间
-            if t<=self.T1:
-                dis= 0.5*self.a1*t**2
-            elif t<=self.T1+t2:
-                dis= 0.5*self.a1*self.T1**2+(t-self.T1)*self.V
-            else:
-                if t>self.T1+self.T2+t2:
-                    t=self.T1+self.T2+t2
-                dis= target_dis-0.5*self.a2*(self.T1+self.T2+t2-t)**2
-        else:
-            t1 = math.sqrt(2 * target_dis/ (self.a1+self.a1**2/self.a2))
-            t2=self.a1*t1/self.a2
-            if t<=t1:
-                dis= 0.5*self.a1*t**2
-            else:
-               if t>t1+t2:
-                    t=t1+t2
-               dis= target_dis-0.5*self.a2*(t1+t2-t)**2 
-        dir=1 if to_offset>self.offset else -1
-        pos=self.offset+dis*dir
-        if self.cfg!=None:
-            assert self.cfg.min_offset<=pos<=self.cfg.max_offset
-        return pos
+class FreeState(IState):
+    def __init__(self):
+        self.timer:float=0
+    def enter(self):
+        pass
+    def exit(self):
+        pass
+    def update(self,delta_time:float,total_time):
+        self.timer+=delta_time
 
-    def ETA(self,to_offset:float):#Estimated time of arrival
-        target_dis:float=abs(to_offset-self.offset)
-        if target_dis>=self.D:
-            t2=(target_dis-self.D)/self.V #匀速运动时间
-            return self.T1+self.T2+t2
-        # v=t1.a1=t2.a2 ==> t2=t1*a1/a2
-        # target_dis=0.5*a1*t1^2+0.5*t1^2*a2*a1^2/a2^2=0.5*t1^2*(a1+a1^2/a2)
-        #  ==> t1=sqrt(2*target_dis/(a1+a1^2/a2))
-        t1 = math.sqrt(2 * target_dis/ (self.a1+self.a1**2/self.a2))
-        t2=self.a1*t1/self.a2
-        return t1+t2
+class LiftState(IState):
+    def __init__(self,h: Hoist):
+        self.hoist: Hoist=h
 
+    def enter(self):
+        pass
+    def exit(self):
+        pass
+    def update(self,delta_time:float,total_time):
+        self.hoist.y+=delta_time*self.hoist.speed_y
+        self.work_time+=delta_time
+        if self.hoist.y>=2:
+            self.hoist.y=2
+            self.hoist.fsm.set_state('MoveState')
+class DropState(IState):
+    def __init__(self,h: Hoist):
+        self.hoist: Hoist=h
 
-
+    def enter(self):
+        pass
+    def exit(self):
+        pass
+    def update(self,delta_time:float,total_time):
+        self.hoist.y-=delta_time*self.hoist.speed_y
+        self.work_time+=delta_time
+        if self.hoist.y<=0:
+            self.hoist.y=0
+            self.hoist.fsm.set_state('FreeState')
+class MoveState(IState):
+    def __init__(self,h: Hoist):
+        self.hoist: Hoist=h
+        self.target:float=None
+    def enter(self):
+        assert self.target is not None
+    def exit(self):
+        self.target=None
+    def update(self,delta_time:float,total_time):
+        target=self.target
+        dis=abs(target-self.x)
+        self.work_time+=delta_time
+        if dis>1e-2:
+            dir1=target-self.x
+            self.x+=self.hoist.speed*dir1/dis*delta_time
+            dir2=target-self.x
+            if dir1*dir2<=0:
+                self.x=target
+                # if self.center!=None:
+                #     self.center.publish('on_arrived',self)

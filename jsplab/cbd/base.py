@@ -6,6 +6,9 @@ class GameObject:
     """游戏对象管理多个组件"""
     def __init__(self):
         self.components: Dict[Type[Component], Component] = {}
+        
+    def set_component_enable(self, component_class: Type[T],enbale=True) :
+        self.components[component_class].enable= enbale
 
     def add_component(self, component_class: Type[T]) -> T:
         """创建并添加一个组件到游戏对象"""
@@ -18,14 +21,20 @@ class GameObject:
         """获取游戏对象上的一个组件"""
         return self.components.get(component_class, None)
 
-    def update(self,delta_time:float=0.016,total_time=0):
+    def update(self,delta_time:float,total_time):
         """更新游戏对象的所有组件"""
-        for component in self.components.values():
-            component.update()
+        for com in self.components.values():
+            if com.enable:
+                com.update(delta_time,total_time)
 
 class Component:
     """游戏组件基类"""
     def __init__(self):
+        self.enable=True
         self.game_object: Optional[GameObject] = None    
-        def update(self,delta_time:float=0.016,total_time=0):
-            pass
+    def update(self,delta_time:float,total_time):
+        pass
+
+
+
+

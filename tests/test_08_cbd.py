@@ -8,7 +8,6 @@ class MyGame:
         print(f"Game Over!")
 
 class Health(Component):
-    """位置和缩放组件"""
     def __init__(self):
         super().__init__()
         self.hp = 10 
@@ -33,3 +32,4 @@ def test_game():
     assert hc.hp==5 and game.is_over==False
     msg_mgr.publish('on_damaged',amount=10,center=msg_mgr)
     assert hc.hp==0 and game.is_over==True    
+
