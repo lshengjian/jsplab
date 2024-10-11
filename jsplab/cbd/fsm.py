@@ -13,10 +13,9 @@ class IState(Protocol):
         """状态更新，每帧调用"""
         ...
 
-class FSM(Component):
+class FSM:
     """状态机组件，管理和切换不同的状态"""
     def __init__(self):
-        super().__init__()
         self.states :List[IState]= {}
         self.current_state :IState= None
 

@@ -19,8 +19,7 @@ class RunState:
 
 # Simulate player taking damageplayer.take_damage(10)
 def test_FSM():
-    player = GameObject()
-    fsm = player.add_component(FSM)
+    fsm = FSM()
     fsm.add_state(IdleState())
     fsm.add_state(RunState())
 

@@ -1,4 +1,4 @@
-from jsplab.cbd import IState,FSM,Component,EventManager
+from jsplab.cbd import Component,EventManager
 
 class Transfer(Component):
     def __init__(self):

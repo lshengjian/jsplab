@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__.split('.')[-1])
 
 
 #HoistCfg = namedtuple("HoistCfg", "offset a1 a2 speed code group min_offset max_offset down_time up_time")
-class Hoist:
+class Engine:
     def __init__(self,offset=0,a1=1,a2=1,speed=1):
         
         self.offset = offset
@@ -49,8 +49,6 @@ class Hoist:
                dis= target_dis-0.5*self.a2*(t1+t2-t)**2 
         dir=1 if to_offset>self.offset else -1
         pos=self.offset+dis*dir
-        if self.cfg!=None:
-            assert self.cfg.min_offset<=pos<=self.cfg.max_offset
         return pos
 
     def ETA(self,to_offset:float):#Estimated time of arrival
