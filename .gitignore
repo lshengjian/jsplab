@@ -2,6 +2,7 @@
 __pycache__/
 results/
 logs/
+todo/
 *.py[cod]
 *$py.class
 

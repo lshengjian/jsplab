@@ -1,0 +1,28 @@
+Time,Action of Hoist,Time,Action of Hoist
+0,Remove C3 from TO (C3 now loaded),306,Drop C2into T7.
+0-31,Take C3 from TO to T1.,306-316,Go from T7 to T2 empty.
+31,Drop C3into T1.,316,Remove C3 from T2.
+31-48,Go from T1 to T9 empty.,316-338,Take C3 from T2 to T3.
+48,Remove C1 from T9.,338,Drop C3into T3.
+48-95,Take C1 from T9 to T10,338-346,Go from T3 to T11 empty.
+95,Drop C1into T10.,346,Remove C1 from T11.
+95-107,Go from T10 to T4 empty.,346-368,Take C1 from T11 to T12.
+107,Remove C2 from T4.,368,Drop C1 into T12.
+107-132,Take C2from T4to T5.,368-382,Go from T12 to T7empty.
+132,Drop C2into T5.,382,Remove C2from T7.
+132-162,Dwell at T5.,382-404,Take C2 from T7to T8.
+162,Remove C2from T5.,404,Drop C2 into T8.
+162-185,Take C2 from T5 to T6.,404-420,Go from T8 to T12 empty.
+185,Drop C2into T6.,420,Remove C1 from T12.
+185-195,Go from T6 to T1 empty.,420-450,Take C1 from T12to TO.
+195,Remove C3 from T1.,450,Unload C1,load C4.
+195-217,Take C3from Ti to T2.,450-476,Go from TO to T8 empty.
+217,Drop C3into T2.,476,Remove C2from T8.
+217-229,Go from T2 to T10 empty.,476-498,Take C2 from T8to T9.
+229,Remove C1from T10.,498,Drop C2into T9.
+229-256,Take C1 from T10 to T11.,498-511,Go from T9 to T3 empty.
+256,Drop C1into T11.,511,Remove C3from T3.
+256-270,Go from T12 to T6 empty.,511-544,Dwell at T3.
+270-284,Dwell at T6.,544-566,Take C3 from T3 to T4.
+284,Remove C2 from T6.,566,Drop C3into T4.
+284-306,Take C2 from T6to T7.,566-580,Go from T4 to TO empty.

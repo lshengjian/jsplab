@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.typing import NDArray
 from omegaconf import OmegaConf
 from  pathlib import Path
 from  importlib import import_module
@@ -6,10 +7,14 @@ import re
 from typing import List
 from functools import lru_cache
 # 假设 datadef 目录在当前工作目录下
-__all__=["text2nums","clean_comment","one_hot","load_config","get_dataclass_by_name"]
+__all__=["load_data","text2nums","clean_comment","one_hot","load_config","get_dataclass_by_name"]
 
 package_prefix = 'jsplab.conf'
-
+def load_data(fpath:str)->NDArray:
+    #if fpath.endswith('.')
+    fpath=Path(__file__).parent.parent.parent/f'data/{fpath}'
+    data = np.genfromtxt(fpath, delimiter=',', encoding='utf-8')  
+    return data
 @lru_cache(maxsize=32)  
 def get_dataclass_by_name(class_name: str,dir=''):
 

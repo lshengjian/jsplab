@@ -1,2 +1,2 @@
 from .common import *
-from .ecs import Processor,World
+from .timeway import draw_timeway
