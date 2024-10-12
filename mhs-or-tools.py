@@ -1,99 +1,90 @@
-from ortools.linear_solver import pywraplp
-mu = [1, 1, 1, 1, 1]
-w = [0, 2, 4, 6, 8, 10]
-v_value = 1
-eta = [1, 1, 1, 1, 1]
-s = [0, 1, 2, 3, 4]
+from ortools.sat.python import cp_model
+from jsplab.utils import load_data
+
+
 def multi_hoist_scheduling():
-    # 创建求解器
-    solver = pywraplp.Solver.CreateSolver('CBC')
+    model = cp_model.CpModel()
+    tanks=load_data('epsp/tanks.csv').astype(int)
+    #print(tanks[:,0:5])
+    times=load_data('epsp/free_move_times.csv').astype(int)
+    #print(times[0:5,0:5])
+    num_hoists = 3  # Hoist数量
+    num_tanks = 13  # 处理槽数量
+    min_processing_time = tanks[2,:]  # 每个处理槽的最小加工时间
+    max_processing_time = tanks[3,:]   # 
+    offsets=list(tanks[0,:])
+    seq=list(tanks[1,:])+[0]
+    hts = [0] * num_tanks  # 执行搬运作业所需时间
+    for i in range(num_tanks):
+        s1=seq[i]
+        s2=seq[i+1]
+        hts[i]=times[s1,s2]+20
+    # 设定搬运作业数量n和Hoist数量m
+    n = num_tanks
+    m = num_hoists
 
-    # 问题参数（简化示例）
-    n = 5  # 化学槽数量
-    m = 2  # 提升机数量
-    lambda_value = 1
+    # 设定周期长度的上限T，以及一个较大的正数M
+    T = model.NewIntVar(0,220,'T')
+    M = 1000
 
-    
-
-    d = 1
-    w_l = 0
-    w_r = 10
-    a = [5, 5, 5, 5, 5]
-    b = [10, 10, 10, 10, 10]
-
-
+    # 设定每个处理阶段的时间下限a和上限b，以及移动时间r（这里简单设定为固定值）
+    a = min_processing_time #[10] * n
+    b = max_processing_time #[20] * n
+    r = hts #[5] * n
 
     # 定义决策变量
-    T = solver.NumVar(0, 9999, 'T')  # 周期长度
-    
-    z = [[solver.IntVar(0, 1, f'z_{i}_{k}') for k in range(m)] for i in range(n + 1)]
-    x = [[solver.IntVar(0, 1, f'x_{i}_{j}') for j in range(i + 1, n + 1)] for i in range(n)]
-    y = [[solver.IntVar(0, 1, f'y_{i}_{j}') for j in range(i + 1, n + 1)] for i in range(n)]
-    t= [solver.NumVar(0, 9999, f't_{i}') for i in range(n + 1)]
-    # 定义约束
-    # 个体移动约束
-    for i in range(n + 1):
-        l_i = max(1, m - (w_r - max(w[s[i]], w[s[i + 1]])) // d)
-        u_i = min(m, (1 + min(w[s[i]], w[s[i + 1]] - w_l)) // d)
-        solver.Add(sum(z[i][k] for k in range(l_i, u_i)) == 1)
-    for i in range(n):  # 这里将范围从n + 1改为n，避免最后一次迭代出现问题
-        l_i = max(1, m - (w_r - max(w[s[i] if i < len(s) else 0], w[s[i + 1] if i + 1 < len(s) else 0])) // d)
-        u_i = min(m, (1 + min(w[s[i] if i < len(s) else 0], w[s[i + 1] if i + 1 < len(s) else 0]] - w_l)) // d)
-        solver.Add(sum(z[i][k] for k in range(l_i, u_i)) == 1)
-
-    # 处理时间约束
-    for i in range(1, n + 1):
-        solver.Add(a[i - 1] + r(i - 1) - (1 - x[i - 1][i]) * solver.infinity() <= t[i] - t[i - 1])
-        solver.Add(t[i] - t[i - 1] <= b[i - 1] + r(i - 1) + (1 - x[i - 1][i]) * solver.infinity())
-        solver.Add(a[i - 1] + r(i - 1) - x[i - 1][i] * solver.infinity() <= T + t[i] - t[i - 1])
-        solver.Add(T + t[i] - t[i - 1] <= b[i - 1] + r[i - 1] + x[i - 1][i] * solver.infinity())
-
-    # 移动对约束（简化示例）
+    ti = [model.NewIntVar(0, 220, f't_{i}') for i in range(n)]
+    zik = [[model.NewBoolVar( f'z_{i}_{k}') for k in range(m)] for i in range(n)]
+    yij = [[model.NewBoolVar( f'y_{i}_{j}') for j in range(n)] for i in range(n)]
+    # 添加约束条件
+    # 搬运作业只能分配给一台Hoist
     for i in range(n):
-        for j in range(i + 1, n + 1):
+        model.add(ti[i]<T)
+        model.Add(sum(zik[i][k] for k in range(m)) == 1)
+
+
+    # 任意两个搬运作业之间只有唯一一种优先关系
+    for i in range(n ):
+        for j in range(i+1, n):
+            model.Add(yij[i][j] + yij[j][i] == 1)
+
+    # 时间窗口约束
+    for i in range(1, n):
+        model.Add(a[i] + r[i - 1] - (1 - yij[i - 1][i]) * M <= ti[i] - ti[i - 1])
+        model.Add(ti[i] - ti[i - 1] <= b[i] + r[i - 1] + (1 - yij[i - 1][i]) * M)
+        model.Add(a[i] + r[i - 1] - yij[i - 1][i] * M <= T + ti[i] - ti[i - 1])
+        model.Add(T + ti[i] - ti[i - 1] <= b[i] + r[i - 1] + yij[i - 1][i] * M)
+
+    # Hoist移动轨迹相关约束
+    for i in range(n):
+        for j in range(i + 1, n):
             for p in range(m):
-                for q in range(m):
-                    h = q - p
-                    alpha, beta = calculate_alpha_beta(i, j, h, w, s, mu, eta, v_value, lambda_value, d)
-                    if beta <= 0 <= alpha:
-                        solver.Add(t[j] - t[i] >= alpha - (3 - z[i][p] - z[j][q] - x[i][j]) * solver.infinity())
-                        solver.Add(t[j] - t[i] <= beta + (2 - z[i][p] - z[j][q] + x[i][j]) * solver.infinity())
-                    elif beta > 0:
-                        solver.Add(t[j] - t[i] <= beta - T + (3 - z[i][p] - z[j][q] - y[i][j]) * solver.infinity())
-                        solver.Add(t[j] - t[i] >= alpha - T - (2 - z[i][p] - z[j][q] + y[i][j]) * solver.infinity())
-                    elif alpha < 0:
-                        solver.Add(t[j] - t[i] >= alpha + T - (3 - z[i][p] - z[j][q] - y[i][j]) * solver.infinity())
-                        solver.Add(t[j] - t[i] <= T + beta + (2 - z[i][p] - z[j][q] + y[i][j]) * solver.infinity())
+                for q in range(p,m):
+                    si1=seq[i]
+                    si2=seq[i+1]
+                    sj=seq[j]
+                    h=q-p
+                    model.Add(ti[j] - ti[i] >= abs(offsets[si2]-offsets[sj]) - M * (3 - zik[i][p] - zik[j][q] - yij[i][j]))
+                    model.Add(ti[i] - ti[j] >= abs(offsets[si1]-offsets[sj]) - M * (2 - zik[i][p] - zik[j][q] + yij[i][j]))
+                    model.Add(ti[i]+T - ti[i] >=abs(offsets[si1]-offsets[sj]) - M * (2 - zik[i][p] - zik[j][q] ))
 
-    # 目标函数
-    solver.Minimize(T)
 
-    # 求解
-    status = solver.Solve()
+    # 定义目标函数
+    model.Minimize(T)
 
-    if status == pywraplp.Solver.OPTIMAL:
-        print('Optimal solution found:')
-        print('T =', T.value())
-        for i in range(n + 1):
-            print(f't_{i} =', t[i].value())
-            for k in range(m):
-                print(f'z_{i}_{k} =', z[i][k].value())
+    solver = cp_model.CpSolver()
+    status = solver.Solve(model)
+
+    if status == cp_model.OPTIMAL:
+        print('最优解找到：')
         for i in range(n):
-            for j in range(i + 1, n + 1):
-                print(f'x_{i}_{j} =', x[i][j].value())
-                print(f'y_{i}_{j} =', y[i][j].value())
+            print(f't_{i} = {solver.Value(ti[i])}')
+            for k in range(m):
+                if solver.Value(zik[i][k]):
+                    print(f'move {i} by H{k+1}')
+
     else:
-        print('No optimal solution found.')
+        print('未找到最优解')
 
-def r(i):
-    return mu[i] + abs(w[s[i + 1]] - w[s[i]]) / v_value + eta[i]
-
-def calculate_alpha_beta(i, j, h, w, s, mu, eta, v, lambda_, d):
-    # 简化的alpha和beta计算示例，仅处理h=0的情况
-    if h == 0:
-        alpha = r(i) + (w[s[j]] - w[s[i + 1]]) / lambda_
-        beta = -r(j) - abs(w[s[j + 1]] - w[s[i]] ) / lambda_
-    return alpha, beta
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     multi_hoist_scheduling()

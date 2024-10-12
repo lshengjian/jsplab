@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from collections import defaultdict
 colors = plt.cm.tab10.colors
-lift_time = 2  # 原地上升时间
-lower_time = 2  # 原地下降时间
-def draw_timeway(title='demo',tank_positions=None,hoist_moves=None):
+
+def draw_timeway(title='demo',tank_positions=None,hoist_moves=None,lift_time=8.5,lower_time=11.5):
     if tank_positions is None:
         tanks = ['Tank 1', 'Tank 2', 'Tank 3', 'Tank 4', 'Tank 5']
         tank_positions = {tank: i+1 for i, tank in enumerate(tanks)}
@@ -12,16 +12,23 @@ def draw_timeway(title='demo',tank_positions=None,hoist_moves=None):
     if hoist_moves is None:
         hoists = ['Hoist 1', 'Hoist 2']
         # 定义天车在每个周期内的运动
-        # 每个元素是一个列表，包含(起始槽, 目的槽, 开始时间, 移动时间, 是否载物)
+        # 每个元素是一个列表，包含(起始槽, 目的槽, 开始时间, 结束时间, 是否载物)
         hoist_moves = {
-            'Hoist 1': [('Tank 1', 'Tank 3', 0, 6, True), ('Tank 3', 'Tank 2', 6, 1, False),('Tank 2', 'Tank 2', 7, 3, False), ('Tank 2', 'Tank 4', 10, 16, True)],
-            'Hoist 2': [('Tank 5', 'Tank 3', 24, 2, False), ('Tank 3', 'Tank 5', 26, 6, True)]
+            'Hoist 1': [('Tank 1', 'Tank 3', 0, 6, True), ('Tank 3', 'Tank 2', 6, 7, False),('Tank 2', 'Tank 2', 7, 10, False), ('Tank 2', 'Tank 4', 10, 26, True)],
+            'Hoist 2': [('Tank 5', 'Tank 3', 24, 26, False), ('Tank 3', 'Tank 5', 26, 32, True)]
         }
     else:
         hoists=tuple(hoist_moves.keys())
 
+    x2ts=defaultdict(list)
+    for t,x in tank_positions.items():
+        x2ts[x].append(t)
+    for x,ts in x2ts.items():
+        for i,t in  enumerate(ts):
+            tank_positions[t]+=i*0.5
     # 设置图表
-    fig, ax = plt.subplots()
+    
+    fig, ax = plt.subplots(figsize=(8, 8))
 
     # 绘制槽
     for tank, pos in tank_positions.items():
@@ -34,8 +41,8 @@ def draw_timeway(title='demo',tank_positions=None,hoist_moves=None):
     for hoist, moves in hoist_moves.items():
         color = colors[hoists.index(hoist)]
         for move in moves:
-            start_tank,end_tank,start_time,duration,had_load = move
-            end_time=start_time+duration
+            start_tank,end_tank,start_time,end_time,had_load = move
+            #end_time=start_time+duration
             start_pos = tank_positions[start_tank]
             end_pos = tank_positions[end_tank]
             
