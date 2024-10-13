@@ -3,7 +3,7 @@ import numpy as np
 from collections import defaultdict
 colors = plt.cm.tab10.colors
 
-def draw_timeway(title='demo',tank_positions=None,hoist_moves=None,lift_time=8.5,lower_time=11.5):
+def draw_timeway(title='demo',tank_positions=None,hoist_moves=None,lift_time=2,lower_time=9):
     if tank_positions is None:
         tanks = ['Tank 1', 'Tank 2', 'Tank 3', 'Tank 4', 'Tank 5']
         tank_positions = {tank: i+1 for i, tank in enumerate(tanks)}
@@ -28,7 +28,7 @@ def draw_timeway(title='demo',tank_positions=None,hoist_moves=None,lift_time=8.5
             tank_positions[t]+=i*0.5
     # 设置图表
     
-    fig, ax = plt.subplots(figsize=(8, 8))
+    fig, ax = plt.subplots(figsize=(8, 6))
 
     # 绘制槽
     for tank, pos in tank_positions.items():
