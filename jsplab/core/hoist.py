@@ -1,5 +1,6 @@
 from jsplab.cbd import IState,FSM,Component,EventManager
 from dataclasses import dataclass
+from jsplab.conf import G
 @dataclass
 class ShiftCommand:
     target:float=0
@@ -47,9 +48,11 @@ class LiftingState(IState):
     def __init__(self,h: Hoist):
         self.hoist: Hoist=h
     def enter(self):
-        print('enter LiftingState')
+        pass
+        #print('enter LiftingState')
     def exit(self):
-        print('exit LiftingState')
+        pass
+        #print('exit LiftingState')
     def update(self,delta_time:float,total_time):
         self.hoist.y+=delta_time*self.hoist.speed_y
 
@@ -64,9 +67,10 @@ class LoweringState(IState):
         self.hoist: Hoist=h
 
     def enter(self):
-        print('enter LoweringState')
+        pass
+        #print('enter LoweringState')
     def exit(self):
-        print('exit LoweringState')
+        pass
     def update(self,delta_time:float,total_time):
         self.hoist.y-=delta_time*self.hoist.speed_y
         if self.hoist.y<=0:
@@ -82,18 +86,18 @@ class MovingState(IState):
         self.target=None
 
     def enter(self):
-        print('enter MovingState')
+        
         target=None
         if isinstance(self.hoist.cmd,ShiftCommand):
             target=self.hoist.cmd.target
         elif isinstance(self.hoist.cmd,WorkCommand):
-            if abs(self.hoist.cmd.tank1_offset-self.hoist.x)<1e-2 and abs(self.hoist.y-2)<1e-2:
+            if abs(self.hoist.cmd.tank1_offset-self.hoist.x)<G.EPS and abs(self.hoist.y-2)<G.EPS:
                 target=self.hoist.cmd.tank2_offset
             else:
                 target=self.hoist.cmd.tank1_offset
         self.target=target
     def exit(self):
-        print('exit MovingState')
+        
         self.target=None
         if isinstance(self.hoist.cmd,ShiftCommand):
             self.hoist.cmd=None
@@ -101,7 +105,7 @@ class MovingState(IState):
     def update(self,delta_time:float,total_time):
         target=self.target
         dis=abs(target-self.hoist.x)
-        if dis>1e-2:
+        if dis>G.EPS:
             dir1=target-self.hoist.x
             self.hoist.x+=self.hoist.speed*dir1/dis*delta_time
             dir2=target-self.hoist.x
@@ -110,7 +114,7 @@ class MovingState(IState):
                 if isinstance(self.hoist.cmd,ShiftCommand):
                     self.hoist.fsm.set_state('FreeState')
                 elif isinstance(self.hoist.cmd,WorkCommand):
-                    if abs(self.hoist.y-2)<1e-2 and abs(self.hoist.cmd.tank2_offset-self.hoist.x)<1e-2:
+                    if abs(self.hoist.y-2)<G.EPS and abs(self.hoist.cmd.tank2_offset-self.hoist.x)<G.EPS:
                         self.hoist.fsm.set_state('LoweringState')
                     else:
                        self.hoist.fsm.set_state('LiftingState') 

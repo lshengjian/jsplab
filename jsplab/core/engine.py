@@ -1,12 +1,6 @@
-from sortedcontainers import SortedDict  
-from typing import List
-from collections import namedtuple
-
 import logging,math
 logger = logging.getLogger(__name__.split('.')[-1])
 
-
-#HoistCfg = namedtuple("HoistCfg", "offset a1 a2 speed code group min_offset max_offset down_time up_time")
 class Engine:
     def __init__(self,offset=0,a1=1,a2=1,speed=1):
         

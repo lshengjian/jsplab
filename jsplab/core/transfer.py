@@ -1,5 +1,5 @@
 from jsplab.cbd import Component,EventManager
-
+from jsplab.conf import G
 class Transfer(Component):
     def __init__(self):
         super().__init__()
@@ -13,18 +13,19 @@ class Transfer(Component):
         self.move_timer=0
     
     def update(self,delta_time:float=1,total_time=1):
-        if self.carring is None:
-            self.goto_target(self.x1,delta_time) 
-        else:
-            self.goto_target(self.x2,delta_time)
-        if abs(self.x-self.x1)<1e-3 or abs(self.x-self.x2)<1e-3:
-            self.free_timer+=delta_time
-        else:
+        if self.carring:
             self.move_timer+=delta_time
+            self.goto_target(self.x2,delta_time)
+        else:
+            self.free_timer+=delta_time
+            self.goto_target(self.x1,delta_time)             
+        #if abs(self.x-self.x1)<1e-3 or abs(self.x-self.x2)<1e-3:
+
+            
 
     def goto_target(self,tartget:float, delta_time:float):
         dis=abs(tartget-self.x)
-        if dis>1e-2:
+        if dis>G.EPS:
             dir1=tartget-self.x
             self.x+=self.speed*dir1/dis*delta_time
             dir2=tartget-self.x

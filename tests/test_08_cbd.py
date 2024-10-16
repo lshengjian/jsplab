@@ -3,9 +3,12 @@ from jsplab.cbd import *
 class MyGame:
     def __init__(self):
         self.is_over=False
+        self.event_mgr=EventManager()
     def on_died(self):
         self.is_over=True
         print(f"Game Over!")
+    def notify(self, event_name, *args, **kwargs):  
+        self.event_mgr.publish(event_name,center=self.event_mgr,*args, **kwargs)  
 
 class Health(Component):
     def __init__(self):
@@ -24,12 +27,12 @@ def test_game():
     game=MyGame()
     player = GameObject()
     hc=player.add_component(Health)
-    msg_mgr=EventManager()
-    msg_mgr.subscribe('on_died',game.on_died)
-    msg_mgr.subscribe('on_damaged',hc.damage)
+    
+    game.event_mgr.subscribe('on_died',game.on_died)
+    game.event_mgr.subscribe('on_damaged',hc.damage)
 
-    msg_mgr.publish('on_damaged',amount=5)
+    game.notify('on_damaged',amount=5)
     assert hc.hp==5 and game.is_over==False
-    msg_mgr.publish('on_damaged',amount=10,center=msg_mgr)
+    game.notify('on_damaged',amount=10)
     assert hc.hp==0 and game.is_over==True    
 
