@@ -3,18 +3,17 @@ from numpy.typing import NDArray
 from omegaconf import OmegaConf
 from  pathlib import Path
 from  importlib import import_module
-import re
-from typing import List
+
 from functools import lru_cache
 # 假设 datadef 目录在当前工作目录下
-__all__=["load_data","text2nums","clean_comment","one_hot","load_config","get_dataclass_by_name"]
+__all__=["one_hot","load_config","get_dataclass_by_name"]
 
 package_prefix = 'jsplab.conf'
-def load_data(fpath:str)->NDArray:
-    #if fpath.endswith('.')
-    fpath=Path(__file__).parent.parent.parent/f'data/{fpath}'
-    data = np.genfromtxt(fpath, delimiter=',', encoding='utf-8')  
-    return data
+# def load_data(fpath:str)->NDArray:
+#     #if fpath.endswith('.')
+#     fpath=Path(__file__).parent.parent.parent/f'data/{fpath}'
+#     data = np.genfromtxt(fpath, delimiter=',', encoding='utf-8')  
+#     return data
 @lru_cache(maxsize=32)  
 def get_dataclass_by_name(class_name: str,dir=''):
 
@@ -34,22 +33,6 @@ def get_dataclass_by_name(class_name: str,dir=''):
     module = import_module(pk_name+f'.{module_name}')
     return getattr(module, class_name)
 
-
-
-def text2nums(text: str, toInt=True):
-    ds = map(float, re.findall(r'\d+\.?\d*', text))
-    ds = map(lambda x: round(x) if toInt else round(x, 2), ds)
-    return list(ds)
-
-
-def clean_comment(lines: List[str]) -> List[List[int]]:
-    rt = []
-    for line in lines:
-        line = line.split("#")[0]
-        ds = text2nums(line)
-        if len(ds) > 0:
-            rt.append(ds)
-    return rt
 
 def one_hot(index:int,size:int):
     rt=np.zeros((size,))
