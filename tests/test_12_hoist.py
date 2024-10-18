@@ -22,7 +22,7 @@ def test_transfer():
     for i in range(1,60):
         print('*'*5+str(i)+'*'*5)
         if i==5:
-            h.cmd=WorkCommand(3,6)
+            h.cmd=TransportCommand(3,6)
         if i==30:
             h.cmd=ShiftCommand(2)
         demo.update(1,i+1)

@@ -5,17 +5,20 @@ from jsplab.conf import G
 class ShiftCommand:
     target:float=0
 @dataclass
-class WorkCommand:
+class TransportCommand:
     tank1_offset:float=0
     tank2_offset:float=0
+    urgency:int =0
 
 class Hoist(Component):
     def __init__(self):
         super().__init__()
+        self.code='H1'
         self.center:EventManager=None
         self.fsm:FSM=FSM()
         self.x:float=0
         self.y:float=0
+        self.dx:float=0
 
         self.speed:float=1
         self.speed_y:float=0.25
@@ -36,9 +39,12 @@ class FreeState(IState):
     def __init__(self,h: Hoist):
         self.hoist: Hoist=h
     def enter(self):
-        print('enter FreeState')
+        self.hoist.cmd=None
+        self.hoist.dx=0
+        print(f'{self.hoist.code} enter FreeState')
     def exit(self):
-        print('exit FreeState')
+        pass
+        #print('exit FreeState')
     def update(self,delta_time:float,total_time):
         if self.hoist.cmd!=None:
             self.hoist.fsm.set_state('MovingState')
@@ -90,17 +96,18 @@ class MovingState(IState):
         target=None
         if isinstance(self.hoist.cmd,ShiftCommand):
             target=self.hoist.cmd.target
-        elif isinstance(self.hoist.cmd,WorkCommand):
+            
+        elif isinstance(self.hoist.cmd,TransportCommand):
             if abs(self.hoist.cmd.tank1_offset-self.hoist.x)<G.EPS and abs(self.hoist.y-2)<G.EPS:
                 target=self.hoist.cmd.tank2_offset
             else:
                 target=self.hoist.cmd.tank1_offset
         self.target=target
+        self.hoist.dx=1 if target>self.hoist.x else -1
+
     def exit(self):
-        
         self.target=None
-        if isinstance(self.hoist.cmd,ShiftCommand):
-            self.hoist.cmd=None
+
 
     def update(self,delta_time:float,total_time):
         target=self.target
@@ -113,7 +120,7 @@ class MovingState(IState):
                 self.hoist.x=target
                 if isinstance(self.hoist.cmd,ShiftCommand):
                     self.hoist.fsm.set_state('FreeState')
-                elif isinstance(self.hoist.cmd,WorkCommand):
+                elif isinstance(self.hoist.cmd,TransportCommand):
                     if abs(self.hoist.y-2)<G.EPS and abs(self.hoist.cmd.tank2_offset-self.hoist.x)<G.EPS:
                         self.hoist.fsm.set_state('LoweringState')
                     else:

@@ -36,10 +36,10 @@ def on_key_press(key, mod):
 @window.event
 def on_key_release(key, mod):
     if key ==pyglet.window.key.LEFT:
-        jsp.exe(1,ShiftCommand(7))
+        jsp.exe(1,ShiftCommand(5))
         
     if key==pyglet.window.key.RIGHT:
-        jsp.exe(0,WorkCommand(2,6))
+        jsp.exe(0,TransportCommand(2,5))
 
 @window.event
 def on_draw():

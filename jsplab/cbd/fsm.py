@@ -2,6 +2,7 @@ from typing import Protocol,List
 from .base import Component
 class IState(Protocol):
 
+
     def enter(self):
         """状态进入时调用"""
         ...
@@ -21,8 +22,11 @@ class FSM:
 
     def add_state(self, state:IState):
         name=state.__class__.__name__
+        state.name=name
         self.states[name] = state    
     def set_state(self, state_name):
+        if self.current_state!=None and  self.current_state.name==state_name:
+            return
         if state_name in self.states:
             if self.current_state:
                 self.current_state.exit()

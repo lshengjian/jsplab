@@ -24,16 +24,18 @@ class JobShop:
 
         self.reset()
 
-    def exe(self,hoist_id,cmd:Union[ShiftCommand,WorkCommand]):
+    def exe(self,hoist_id,cmd:Union[ShiftCommand,TransportCommand]):
         self.hoists[hoist_id].cmd=cmd
 
     def reset(self):
+        self.is_over=False
         self.sprites=[]
         self.hoists:List[Hoist]=[]
         self.objs:List[GameObject]=[]
         for i in range(self.num_hoists):
             obj=GameObject()
             h=obj.add_component(Hoist)
+            h.code=f'H{i+1}'
             h.center=self.center
             if i==0:
                 h.x=self.offsets[0]
@@ -50,6 +52,8 @@ class JobShop:
             self.hoists.append(h)
 
     def update(self,dt,t):
+        if self.is_over:
+            return
         for obj in self.objs:
             obj.update(dt,t)
         for h1 in self.hoists:
@@ -57,8 +61,27 @@ class JobShop:
                 if h1==h2:
                     continue
                 if (abs(h1.x-h2.x)<G.HOIST_SAFE_DISTANCE):
-                    self.center.publish('on_hited',self)
+                    if isinstance(h1.cmd,TransportCommand) and isinstance(h2.cmd,TransportCommand):
+                        if h1.cmd.urgency>h2.cmd.urgency:
+                            self.avoid(h2, h1)     
+                        elif h2.cmd.urgency>h1.cmd.urgency:
+                            self.avoid(h1, h2)     
+                        else:
+                            self.is_over=True
+                            self.center.publish('on_hited',self)
+                            return
+                    elif isinstance(h1.cmd,TransportCommand):
+                        self.avoid(h2, h1)                    
+                    elif isinstance(h2.cmd,TransportCommand):
+                        self.avoid(h1, h2)
+                    else:
+                        self.avoid(h1, h2)  
+                    
 
+    def avoid(self, h1, h2):
+        dx=h1.x-h2.x
+        dx=dx/abs(dx+G.EPS)
+        h1.x+=dx
     
     def render(self,batch):
         if len(self.sprites)<=0:
