@@ -24,19 +24,22 @@ def main() -> None:
     tanks=[0,4,5,8,9]
     steps=[(4,5),(8,9)]#,(4,5),(0,)
     # data=[
-    #     [Op(0, 4+W,0,4,8)],  #Step1 S->X by T0 move_time:8 op_time:10
-    #     [Op(1, 4+W,4,8,0)],  #Step2 X->Y by T1
+    #     Op(0, 4+W,0,4,12),  #Step1 S->X by T0 move_time:8 op_time:10
+    #     Op(1, 4+W,4,8,0),  #Step2 X->Y by T1
     # ]
     data=[
-        [Op(0, 4+W,0,4,6)],  #Step1 S->X by T0 move_time:8 op_time:10
-        [Op(1, 4+W,4,8,12)],  #Step2 X->Y by T1
-        [Op(1, 4+W,8,4,6)],  #Step3 Y->X by T1
-        [Op(0, 4+W,4,0,0 )]   #Step4 X->E by T0
+        Op(0, 3+W,0,3,10),  #Step1 S->X by T0 move_time:8 op_time:10
+        Op(1, 3+W,3,6,30),  #Step2 X->Y by T1
+        Op(1, 2+W,6,4,10),  #Step3 Y->X by T1
+        Op(0, 4+W,4,0,0 )   #Step4 X->E by T0
     ]
     jobs=[data]*num_jobs
     num_hoists = 2
     all_hoists = range(num_hoists)
-    horizon =(num_jobs+1)* sum(task[0].move_time+task[0].op_time  for task in data) #19+38+21+8=86
+    for d in data:
+        print(d.move_time,d.op_time)
+    horizon =(num_jobs)* sum(task.move_time+task.op_time  for task in data) #19+38+21+8=86
+    horizon+=len(data)*(1+W)
 
     print(horizon )
 
@@ -47,19 +50,17 @@ def main() -> None:
     hoists_steps = defaultdict(list)
     for t in range(horizon):
         for i in range(num_hoists):
-            if t==0:
+            if t==0 or t==horizon-1:
                 hoists_pos[0].append(model.new_constant(0))
                 hoists_pos[1].append(model.new_constant(7))
             else:
                 hoists_pos[i].append(model.NewIntVar(0, 9, f'x_{i}_{t}'))
 
-
-
     # 添加安全距离约束
     for t in range(horizon):
         for i in range(0,num_hoists):
-            # if i>0:
-            #     model.add(hoists_pos[i][t]>hoists_pos[i-1][t])
+            if i>0:
+                model.add(hoists_pos[i][t]>hoists_pos[i-1][t]+1)
             if t>0:
                 dx=model.NewIntVar(0,9,'')
                 model.add_abs_equality(dx,hoists_pos[i][t-1]-hoists_pos[i][t])
@@ -67,38 +68,45 @@ def main() -> None:
                 hoists_steps[i].append(dx)
     cumulative_var = cp_model.LinearExpr.Sum(hoists_steps[0]+hoists_steps[1])
     hoist_tasks = defaultdict(list)
-    hoist_to_intervals = defaultdict(list)
-    # hoist_keys=defaultdict(list)
+    hoist_vars = defaultdict(list)
     tank_tasks = defaultdict(list)
-    tank_to_intervals = defaultdict(list)
-    # tank_keys=defaultdict(list)
+    tank_vars = defaultdict(list)
+
 
     for job_id, job in enumerate(jobs):
         for task_id, task in enumerate(job):
-            hoist,move_time,from_tank,to_tank,op_time = task[0]
+            hoist,move_time,from_tank,to_tank,op_time = task
             suffix = f"_{job_id}_{task_id}"
             start_var = model.new_int_var(0, horizon, "start" + suffix)
-            for i in range(up_time+1):
+            
+            x=model.new_int_var(0, 9, '')
+            temp=model.new_int_var(0, horizon, '')
+            model.add(temp==start_var)
+            model.add_element(temp,hoists_pos[hoist],x)
+            model.add(x==from_tank)
+            for i in range(up_time,move_time-W+up_time-1):
                 x=model.new_int_var(0, 9, '')
                 temp=model.new_int_var(0, horizon, '')
                 model.add(temp==start_var+i)
                 model.add_element(temp,hoists_pos[hoist],x)
-                model.add(x==from_tank)
+                dir =1 if to_tank>from_tank else -1
+                model.add(x==from_tank+dir*i)  
             end_var = model.new_int_var(0, horizon, "end" + suffix)
             interval_var = model.new_interval_var(
                 start_var, move_time, end_var, "interval" + suffix
             )
-            for i in range(1,1+move_time-W):
-                x=model.new_int_var(0, 9, '')
-                temp=model.new_int_var(0, horizon, '')
-                model.add(temp==start_var+up_time+i)
-                model.add_element(temp,hoists_pos[hoist],x)
-                dir =1 if to_tank>from_tank else -1
-                model.add(x==from_tank+dir*i)  
-            hoist_tasks[job_id,task_id] = task_type(
+            x=model.new_int_var(0, 9, '')
+            temp=model.new_int_var(0, horizon, '')
+            model.add(temp==end_var)
+            model.add_element(temp,hoists_pos[hoist],x)
+            model.add(x==to_tank)
+
+
+            hoist_tasks[job_id,task_id]=task_type(
                 start=start_var, end=end_var, interval=interval_var
             )
-            hoist_to_intervals[hoist].append(hoist_tasks[job_id,task_id])
+
+            hoist_vars[hoist].append(hoist_tasks[job_id,task_id])
 
             start_var=end_var
             end_var = model.new_int_var(0, horizon, "end2" + suffix)
@@ -106,23 +114,19 @@ def main() -> None:
             interval_var = model.new_interval_var(
                 start_var, op_time, end_var, "interval2" + suffix
             )
-            for i in range(1+down_time):
-                x=model.new_int_var(0, 9, '')
-                temp=model.new_int_var(0, horizon, '')
-                model.add(temp==end_var-i)
-                model.add_element(temp,hoists_pos[hoist],x)
-                model.add(x==to_tank)
-            tank_tasks[job_id,task_id] = task_type(
+
+
+            tank_tasks[job_id,task_id]=task_type(
                 start=start_var, end=end_var, interval=interval_var
             )
-            tank_to_intervals[to_tank].append(tank_tasks[job_id,task_id])
+            tank_vars[to_tank].append(tank_tasks[job_id,task_id])
 
-    handle_tasks_same_machine( model, hoist_to_intervals)
-    handle_tasks_same_machine( model, tank_to_intervals,False)
+    handle_tasks_same_machine( model, hoist_vars)
+    handle_tasks_same_machine( model, tank_vars,False)
     for h in all_hoists:
-        model.add_no_overlap([task.interval for task in hoist_to_intervals[h]])
+        model.add_no_overlap([task.interval for task in hoist_vars[h]])
     for tank in tanks:
-        model.add_no_overlap([task.interval for task in tank_to_intervals[tank]])
+        model.add_no_overlap([task.interval for task in tank_vars[tank]])
 
     for job_id, job in enumerate(jobs):
         for task_id in range(len(job) - 1):
@@ -160,9 +164,9 @@ def main() -> None:
         # for t in range(60):
         #     print(f'{t:2} {H1[t]:2}|{H2[t]:2}')
 
-        x = range(len(H1)-1)
-        plt.plot(x, H1[:-1], label='H1')
-        plt.plot(x, H2[:-1], label='H2')
+        x = range(len(H1))
+        plt.plot(x, H1, label='H1')
+        plt.plot(x, H2, label='H2')
         plt.xlabel('Index')
         plt.ylabel('Value')
         plt.title('Visualization of Two Crane Positions')
@@ -171,11 +175,7 @@ def main() -> None:
     else:
         print("No solution found.")
 
-    # Statistics.
-    # print("\nStatistics")
-    # print(f"  - conflicts: {solver.num_conflicts}")
-    # print(f"  - branches : {solver.num_branches}")
-    # print(f"  - wall time: {solver.wall_time}s")
+
 
 def print_reslut( solver, assigned_jobs,is_hoist=True):
     output = ""
@@ -211,7 +211,7 @@ def make_assigned(solver,jobs_data,  hoist_tasks,tank_tasks ):
     tank_assigned_jobs = defaultdict(list)
     for job_id, job in enumerate(jobs_data):
         for task_id, task in enumerate(job):
-            hoist,move_time,from_tank,to_tank,op_time = task[0]
+            hoist,move_time,from_tank,to_tank,op_time = task
             
             hoist_assigned_jobs[hoist].append(
                     assigned_task_type(
@@ -226,7 +226,7 @@ def make_assigned(solver,jobs_data,  hoist_tasks,tank_tasks ):
                         start=solver.value(tank_tasks[(job_id, task_id)].start),
                         job=job_id,
                         index=task_id,
-                        duration=move_time,
+                        duration=op_time,
                     )
                 )
             
@@ -234,7 +234,7 @@ def make_assigned(solver,jobs_data,  hoist_tasks,tank_tasks ):
 
 def handle_tasks_same_machine( model, machine_to_intervals,is_hoist=True):
     all_machines=machine_to_intervals.keys()
-    step=1 if is_hoist else W
+    step=2 if is_hoist else W
     for machine in all_machines:
         tasks = machine_to_intervals[machine]
         arcs = []
