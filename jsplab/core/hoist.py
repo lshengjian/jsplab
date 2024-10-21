@@ -26,7 +26,8 @@ class Hoist(Component):
         self.working_time=0
         self.free_time=0
         self.cmd=None
-
+    def __str__(self):
+        return f"{self.code}|{self.x:02.0f}"
     def update(self,delta_time:float,total_time):
         self.fsm.update(delta_time,total_time)
         if isinstance(self.fsm.current_state,FreeState):
@@ -54,11 +55,12 @@ class LiftingState(IState):
     def __init__(self,h: Hoist):
         self.hoist: Hoist=h
     def enter(self):
-        pass
+        if self.hoist.center!=None:
+            self.hoist.center.publish('on_hoist_pickup',self)
         #print('enter LiftingState')
     def exit(self):
         pass
-        #print('exit LiftingState')
+
     def update(self,delta_time:float,total_time):
         self.hoist.y+=delta_time*self.hoist.speed_y
 
@@ -76,7 +78,8 @@ class LoweringState(IState):
         pass
         #print('enter LoweringState')
     def exit(self):
-        pass
+        if self.hoist.center!=None:
+            self.hoist.center.publish('on_hoist_drop',self)
     def update(self,delta_time:float,total_time):
         self.hoist.y-=delta_time*self.hoist.speed_y
         if self.hoist.y<=0:

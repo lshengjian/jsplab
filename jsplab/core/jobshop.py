@@ -50,6 +50,11 @@ class JobShop:
             h.fsm.set_state('FreeState')
             self.objs.append(obj)
             self.hoists.append(h)
+        obj=GameObject()
+        t:Tank=obj.add_component(Tank)
+        self.objs.append(obj)
+        job=obj.add_component(Workpiece)
+        t.job_in(job)
 
     def update(self,dt,t):
         if self.is_over:
@@ -60,7 +65,10 @@ class JobShop:
             for h2 in self.hoists:
                 if h1==h2:
                     continue
-                if (abs(h1.x-h2.x)<G.HOIST_SAFE_DISTANCE):
+                dis=round(abs(h1.x-h2.x))
+                
+                if (dis<G.HOIST_SAFE_DISTANCE):
+                    print(h1,h2,dis)
                     if isinstance(h1.cmd,TransportCommand) and isinstance(h2.cmd,TransportCommand):
                         if h1.cmd.urgency>h2.cmd.urgency:
                             self.avoid(h2, h1)     
@@ -71,17 +79,26 @@ class JobShop:
                             self.center.publish('on_hited',self)
                             return
                     elif isinstance(h1.cmd,TransportCommand):
-                        self.avoid(h2, h1)                    
+                        if not self.avoid(h2, h1):
+                            return                    
                     elif isinstance(h2.cmd,TransportCommand):
-                        self.avoid(h1, h2)
+                       if not  self.avoid(h1, h2):
+                           return
                     else:
                         self.avoid(h1, h2)  
                     
 
-    def avoid(self, h1, h2):
+    def avoid(self, h1:Hoist, h2:Hoist):
         dx=h1.x-h2.x
         dx=dx/abs(dx+G.EPS)
-        h1.x+=dx
+        s=h1.fsm.current_state
+        if isinstance(s,FreeState) or isinstance(s,MovingState):
+            h1.x+=dx
+            print(f'{h2}-->{h1}')
+            return True
+        print(f'{h1} buzy!')
+        self.is_over=True
+        return False
     
     def render(self,batch):
         if len(self.sprites)<=0:

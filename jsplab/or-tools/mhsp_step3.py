@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 up_time=2
 down_time=2
 W=up_time+down_time
-num_jobs=2
+num_jobs=1
 Op=namedtuple('Op','hoist move_time from_tank to_tank  op_time')
 # Named tuple to store information about created variables.
 task_type = namedtuple("task_type", "start end interval")
@@ -21,18 +21,21 @@ def main() -> None:
     #                   |<------T1--------->|
     #   pos(T1)>=pos(T0)+2
 
-    tanks=[0,4,5,8,9]
-    steps=[(4,5),(8,9)]#,(4,5),(0,)
-    # data=[
-    #     Op(0, 4+W,0,4,12),  #Step1 S->X by T0 move_time:8 op_time:10
-    #     Op(1, 4+W,4,8,0),  #Step2 X->Y by T1
-    # ]
+    tanks=[0,2,3,6]
+    #steps=[(4,5),(8,9)]#,(4,5),(0,)
+    # OP1 T2 time: 12（6~18） OP2 T3 time:16（15~31）
     data=[
-        Op(0, 3+W,0,3,10),  #Step1 S->X by T0 move_time:8 op_time:10
-        Op(1, 3+W,3,6,30),  #Step2 X->Y by T1
-        Op(1, 2+W,6,4,10),  #Step3 Y->X by T1
-        Op(0, 4+W,4,0,0 )   #Step4 X->E by T0
+        Op(0, 2+W,0,2,12), 
+        Op(0, 3+W,0,3,16),
+        Op(1, 4+W,2,6,0),
+        Op(1, 3+W,3,6,0), 
     ]
+    # data=[
+    #     Op(0, 3+W,0,3,10),  #Step1 S->X by T0 move_time:8 op_time:10
+    #     Op(1, 3+W,3,6,30),  #Step2 X->Y by T1
+    #     Op(1, 2+W,6,4,10),  #Step3 Y->X by T1
+    #     Op(0, 4+W,4,0,0 )   #Step4 X->E by T0
+    # ]
     jobs=[data]*num_jobs
     num_hoists = 2
     all_hoists = range(num_hoists)
@@ -59,8 +62,8 @@ def main() -> None:
     # 添加安全距离约束
     for t in range(horizon):
         for i in range(0,num_hoists):
-            if i>0:
-                model.add(hoists_pos[i][t]>hoists_pos[i-1][t]+1)
+            # if i>0:
+            #     model.add(hoists_pos[i][t]>hoists_pos[i-1][t]+1)
             if t>0:
                 dx=model.NewIntVar(0,9,'')
                 model.add_abs_equality(dx,hoists_pos[i][t-1]-hoists_pos[i][t])
