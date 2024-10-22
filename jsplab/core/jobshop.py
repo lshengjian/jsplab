@@ -20,18 +20,27 @@ class JobShop:
         self.offsets=offsets
         self.steps=steps
         self.center=EventManager()
+        self.center.subscribe('on_scheduling',self.on_scheduling)
+        self.center.subscribe('on_timeout',self.on_timeout)
         
 
         self.reset()
-
+    def on_scheduling(self,tank:Tank):
+        print('on_scheduling',tank)
+        tank.plan_hoist=self.hoists[0]
+    def on_timeout(self,tank:Tank):
+        print('on_timeout',tank)
+        self.is_over=True
     def exe(self,hoist_id,cmd:Union[ShiftCommand,TransportCommand]):
         self.hoists[hoist_id].cmd=cmd
 
     def reset(self):
         self.is_over=False
-        self.sprites=[]
+        self.hoist_sprites=[]
+        self.tank_sprites=[]
         self.hoists:List[Hoist]=[]
-        self.objs:List[GameObject]=[]
+        self.tanks:List[Tank]=[]
+        #self.objs:List[GameObject]=[]
         for i in range(self.num_hoists):
             obj=GameObject()
             h=obj.add_component(Hoist)
@@ -48,19 +57,24 @@ class JobShop:
             h.fsm.add_state(LoweringState(h))
             h.fsm.add_state(LiftingState(h))
             h.fsm.set_state('FreeState')
-            self.objs.append(obj)
+            #self.objs.append(obj)
             self.hoists.append(h)
         obj=GameObject()
         t:Tank=obj.add_component(Tank)
-        self.objs.append(obj)
-        job=obj.add_component(Workpiece)
-        t.job_in(job)
+        t.slot=1
+        t.center=self.center
+        #self.objs.append(obj)
+        job=Job('A',0,[Task(1,12,999,[3,4]),Task()])
+        t.put_job(job)
+        self.tanks.append(t)
 
     def update(self,dt,t):
         if self.is_over:
             return
-        for obj in self.objs:
-            obj.update(dt,t)
+        for h in self.hoists:
+            h.game_object.update(dt,t)
+        for t in self.tanks:
+            t.game_object.update(dt,t)
         for h1 in self.hoists:
             for h2 in self.hoists:
                 if h1==h2:
@@ -101,15 +115,20 @@ class JobShop:
         return False
     
     def render(self,batch):
-        if len(self.sprites)<=0:
+        if len(self.hoist_sprites)<=0:
             for h in self.hoists:
-                self.sprites.append(BorderedRectangle(0,0,48,24,color=(0,255,0,100),batch=batch))
-                #self.sprites.append(Circle(0,0,20,batch=batch))
-
-        for i,sp in enumerate(self.sprites):
+                self.hoist_sprites.append(BorderedRectangle(0,0,48,24,color=(0,255,0,100),batch=batch))
+                #self.sprites.append(
+        if len(self.tank_sprites)<=0:
+            for t in self.tanks:
+                self.tank_sprites.append(Circle(0,0,20,batch=batch))
+        for i,sp in enumerate(self.hoist_sprites):
             h:Hoist=self.hoists[i]
             sp.x=(h.x+1)*64
             sp.y=(h.y+1)*64
                 
-
+        for i,sp in enumerate(self.tank_sprites):
+            t:Tank=self.tanks[i]
+            sp.x=(t.x+1)*64
+            sp.y=64
 

@@ -1,12 +1,12 @@
 from jsplab.utils import draw_timeway
-from jsplab.utils import load_data
+from jsplab.utils import TextHelper
 
 if __name__ == "__main__":
     #T2~T3是加工槽位，加工时间均为20s,取出及放下时间均为2s
     #天车1初始位置在T1,天车2初始位置在T5
-    tanks=load_data('epsp/tanks.csv').astype(int)
+    tanks=TextHelper.get_numpy_data('data/epsp/tanks.csv').astype(int)
     #print(tanks[:,0:5])
-    times=load_data('epsp/free_move_times.csv').astype(int)
+    times=TextHelper.get_numpy_data('data/epsp/free_move_times.csv').astype(int)
     num_hoists = 3  # Hoist数量
     num_tanks = tanks.shape[-1]  # 处理槽数量
     min_processing_time = tanks[2,:]  # 每个处理槽的最小加工时间

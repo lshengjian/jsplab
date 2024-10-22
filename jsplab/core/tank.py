@@ -1,30 +1,30 @@
 from jsplab.cbd import Component,EventManager
 from jsplab.conf import G
-from .workpiece import Workpiece
+from .workpiece import Job
 class Tank(Component):
     def __init__(self):
         super().__init__()
         self.slot=0 #槽位号
         self.center:EventManager=None
         self.x:float=0 #本区段的偏移距离
-        self.carring:Workpiece=None
+        self.carring:Job=None
         self.free_time:float=0
         self.working_time:float=0
         self.timer:float=0
-        self.need_hoist=True
+        self.plan_hoist=None
 
     def __str__(self):
         return f"T{self.slot}"
     
-    def job_in(self,job:Workpiece):
+    def put_job(self,job:Job):
         self.carring=job
         self.timer=0
-        self.need_hoist=False
+        self.plan_hoist=None
 
-    def job_out(self)->Workpiece:
+    def pop_job(self)->Job:
         job=self.carring
         self.carring=None
-        self.need_hoist=False
+        self.plan_hoist=None
         return job
     
     def update(self,delta_time:float,total_time):
@@ -37,7 +37,11 @@ class Tank(Component):
             if job.cur_task :
                 if self.timer>=job.cur_task.max_time:
                     print(f'{self} is Over !')
-                elif self.timer>=job.cur_task.min_time-3:
-                    print(f'{self} op finished!')
-                    self.need_hoist=True
+                    if self.center!=None:
+                        self.center.publish('on_timeout',self)
+                elif self.timer>=job.cur_task.min_time-3 and self.plan_hoist is None:
+                    if self.center!=None:
+                        self.center.publish('on_scheduling',self)
+                    # print(f'{self} op finished!')
+                    # self.plan_hoist=True
 
