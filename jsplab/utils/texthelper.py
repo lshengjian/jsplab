@@ -6,6 +6,13 @@ from io import StringIO
 
 class TextHelper:
     @staticmethod
+    def get_data(data_or_file_name:Union[List[str],str] = 'data.csv') -> List[List[int]]:
+        lines=data_or_file_name 
+        if not isinstance(data_or_file_name,list) :   # 读取原始文件并替换分隔符  
+            with open(data_or_file_name, 'r', encoding='utf-8') as f:  
+                lines=f.readlines()
+        return TextHelper.clean_comment(lines)
+    @staticmethod
     def get_numpy_data(data_or_file_name:Union[List[str],str] = 'data.csv',convet2int=False)->NDArray:
         lines=data_or_file_name 
         if not isinstance(data_or_file_name,list) :   # 读取原始文件并替换分隔符  
