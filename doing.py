@@ -1,4 +1,4 @@
-from jsplab.core.workpiece import Job
+from jsplab.core.job import Job
 
 if __name__ == "__main__":
     jobs=Job.make_jobs(2)

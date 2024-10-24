@@ -1,9 +1,6 @@
-#   0   1   2   3   4   5   6   7   8   9
-#   S|E             X   X           Y   Y
-#   |<----------T0----->|
-#                   |<------T1--------->|
-#   pos(T1)>=pos(T0)+2
+
 from jsplab.core import *
+from jsplab.conf import MultiHoistProblem
 from jsplab.cbd import GameObject,EventManager
 from typing import List,Union
 import logging,math,random
@@ -11,20 +8,56 @@ from pyglet.shapes import Circle,BorderedRectangle
 logger = logging.getLogger(__name__.split('.')[-1])
 
 class JobShop:
-    def __init__(self,num_hoists=2,num_jobs=2,offsets=None,steps=None):
-        if offsets is None:
-           offsets=[0,4,5,8,9]
-           steps=[[4,5],[8,9],[4,5],[0]] 
+    def __init__(self,p:MultiHoistProblem,num_hoists=2):
+        self.problem:MultiHoistProblem=p
         self.num_hoists=num_hoists
-        self.num_jobs=num_jobs
-        self.offsets=offsets
-        self.steps=steps
+        self.num_jobs=len(p.procs)
+        self.hoists:List[Hoist]=[]
+        self.tanks:List[Tank]=[]
         self.center=EventManager()
         self.center.subscribe('on_scheduling',self.on_scheduling)
         self.center.subscribe('on_timeout',self.on_timeout)
-        
-
+        self.center.subscribe('on_hoist_pickup',self.on_hoist_pickup)
+        self.center.subscribe('on_hoist_drop',self.on_hoist_drop)
         self.reset()
+    
+
+    def start_job(self):
+        if len(self.todo)<1:
+            return
+        job=random.choice(self.todo)
+        self.todo.remove(job)
+        logger.info(f'start {job}')
+        self.tanks[0].put_job(job)
+        return job
+
+    def on_hoist_pickup(self,hoist:Hoist):
+        logger.info(f'{hoist} pickup')
+        from_tank = self.look_tank_by_hoist(hoist)
+        if from_tank!=None:
+            job=from_tank.pop_job()
+            hoist.carring=job
+
+    def look_tank_by_hoist(self, hoist):
+        from_tank=None
+        for tank in self.tanks:
+            if tank.plan_hoist==hoist:
+                from_tank=tank
+        return from_tank
+
+  
+
+    def on_hoist_drop(self,hoist:Hoist):
+        job:Job=hoist.carring
+        logger.info(f'{hoist} drop')
+        if job!=None:
+            next_task=job.next_task
+            if next_task!=None:
+                idx=next_task.cfg.tank_index
+                tank=self.tanks[idx]
+                hoist.carring=None
+                tank.put_job(job)
+
     def on_scheduling(self,tank:Tank):
         print('on_scheduling',tank)
         tank.plan_hoist=self.hoists[0]
@@ -38,35 +71,45 @@ class JobShop:
         self.is_over=False
         self.hoist_sprites=[]
         self.tank_sprites=[]
-        self.hoists:List[Hoist]=[]
-        self.tanks:List[Tank]=[]
+        self.job_sprites=[]
+        self.hoists.clear()
+        self.tanks.clear()
         #self.objs:List[GameObject]=[]
+        self.make_hoists()
+        self.make_tanks()
+        self.jobs=Job.make_jobs(self.problem,self.num_hoists)
+        self.todo=[]
+        self.todo.extend(self.jobs)
+        assert self.num_jobs==len(self.jobs)
+
+    def make_tanks(self):
+        for i,offset in enumerate(self.problem.tank_offsets):
+            obj=GameObject()
+            t:Tank=obj.add_component(Tank)
+            t.index=i
+            t.x=offset
+            t.center=self.center
+            self.tanks.append(t)
+
+    def make_hoists(self):
         for i in range(self.num_hoists):
             obj=GameObject()
             h=obj.add_component(Hoist)
             h.code=f'H{i+1}'
             h.center=self.center
             if i==0:
-                h.x=self.offsets[0]
+                h.x=self.problem.min_offset
             elif i==self.num_hoists-1:
-                h.x=self.offsets[-1]
+                h.x=self.problem.max_offset
             else:
-                h.x=self.offsets[0]+G.HOIST_SAFE_DISTANCE*i
+                h.x=self.problem.min_offset+G.HOIST_SAFE_DISTANCE*i
             h.fsm.add_state(FreeState(h))
             h.fsm.add_state(MovingState(h))
             h.fsm.add_state(LoweringState(h))
             h.fsm.add_state(LiftingState(h))
             h.fsm.set_state('FreeState')
-            #self.objs.append(obj)
             self.hoists.append(h)
-        obj=GameObject()
-        t:Tank=obj.add_component(Tank)
-        t.slot=1
-        t.center=self.center
-        #self.objs.append(obj)
-        job=Job('A',0,[Task(1,12,999,[3,4]),Task()])
-        t.put_job(job)
-        self.tanks.append(t)
+        
 
     def update(self,dt,t):
         if self.is_over:
@@ -116,19 +159,26 @@ class JobShop:
     
     def render(self,batch):
         if len(self.hoist_sprites)<=0:
-            for h in self.hoists:
+            for j in self.hoists:
                 self.hoist_sprites.append(BorderedRectangle(0,0,48,24,color=(0,255,0,100),batch=batch))
                 #self.sprites.append(
         if len(self.tank_sprites)<=0:
             for t in self.tanks:
                 self.tank_sprites.append(Circle(0,0,20,batch=batch))
+        if len(self.job_sprites)<=0:
+            for j in self.jobs:
+                self.job_sprites.append(Circle(300,300,10,color=(250,0,0,200),batch=batch))
         for i,sp in enumerate(self.hoist_sprites):
-            h:Hoist=self.hoists[i]
-            sp.x=(h.x+1)*64
-            sp.y=(h.y+1)*64
+            j:Hoist=self.hoists[i]
+            sp.x=(j.x+1)*64
+            sp.y=(j.y+1)*64
                 
         for i,sp in enumerate(self.tank_sprites):
             t:Tank=self.tanks[i]
             sp.x=(t.x+1)*64
             sp.y=64
 
+        for i,sp in enumerate(self.job_sprites):
+            j:Job=self.jobs[i]
+            sp.x=(j.x+1)*64
+            sp.y=(j.y+1)*64

@@ -2,7 +2,7 @@ from  pathlib import Path
 from logging import config
 from .transfer import Transfer
 from .hoist import *
-from .workpiece import *
+from .job import *
 from .tank import Tank
 import yaml
 with open(file=Path(__file__).parent.parent.parent/"conf/logging.yaml", mode='r', encoding="utf-8") as file:

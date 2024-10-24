@@ -15,6 +15,9 @@ class MultiHoistProblem:
         lines=TextHelper.get_data(data_root/f'data/{fpath}')
         for i,d in enumerate(lines[0]):
             self.tank_offsets.append(d)
+        
+        self.min_offset=min(self.tank_offsets)
+        self.max_offset=max(self.tank_offsets)
 
         
         for i in range(1,len(lines),3):

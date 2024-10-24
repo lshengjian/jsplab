@@ -1,7 +1,8 @@
 import pyglet
 from jsplab.core import *
+from jsplab.conf.mhp import MultiHoistProblem
 from jsplab.core.jobshop import JobShop
-FPS = 60
+FPS = 24
 RESOLUTION = 720, 480
 ###############################################
 #  Initialize pyglet window and graphics batch:
@@ -11,35 +12,43 @@ window = pyglet.window.Window(width=RESOLUTION[0],
                               caption="My Game")
 batch = pyglet.graphics.Batch()
 timer=0
-
+cur_hoist_idx=0
 
 def on_hited(sender):
     print('too close')
     pyglet.app.exit()
-jsp=JobShop()
+cfg=MultiHoistProblem('mhp/h2j2.csv')
+jsp=JobShop(cfg,2)
 jsp.center.subscribe('on_hited',on_hited)
+jsp.start_job()
 ################################################
 #  Set up pyglet events for input and rendering:
 ################################################
-@window.event
-def on_key_press(key, mod):
-    if key == pyglet.window.key.RIGHT:
-        pass
-    if key == pyglet.window.key.LEFT:
-        pass
-    if key == pyglet.window.key.UP:
-        pass
-    if key == pyglet.window.key.DOWN:
-        pass
+# @window.event
+# def on_key_press(key, mod):
+#     if key == pyglet.window.key.RIGHT:
+#         pass
+#     if key == pyglet.window.key.LEFT:
+#         pass
+#     if key == pyglet.window.key.UP:
+#         pass
+#     if key == pyglet.window.key.DOWN:
+#         pass
 
 
 @window.event
 def on_key_release(key, mod):
+    global cur_hoist_idx
+    if key ==pyglet.window.key.RIGHT:
+        jsp.exe(cur_hoist_idx,TransportCommand(0,3) if cur_hoist_idx==0 else TransportCommand(3,6))
+
     if key ==pyglet.window.key.LEFT:
-        jsp.exe(1,ShiftCommand(5))
+        t=0 if cur_hoist_idx==0 else 3
+        jsp.exe(cur_hoist_idx,ShiftCommand(t))
         
-    if key==pyglet.window.key.RIGHT:
-        jsp.exe(0,TransportCommand(2,5))
+    if key==pyglet.window.key.TAB:
+        cur_hoist_idx=(cur_hoist_idx+1)%2
+        
 
 @window.event
 def on_draw():
