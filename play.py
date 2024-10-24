@@ -17,7 +17,7 @@ cur_hoist_idx=0
 def on_hited(sender):
     print('too close')
     pyglet.app.exit()
-cfg=MultiHoistProblem('mhp/h2j2.csv')
+cfg=MultiHoistProblem('mhp/t4j2.csv')
 jsp=JobShop(cfg,2)
 jsp.center.subscribe('on_hited',on_hited)
 jsp.start_job()

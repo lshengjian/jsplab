@@ -1,6 +1,6 @@
 
 from jsplab.core import *
-from jsplab.conf import MultiHoistProblem
+from jsplab.conf import MultiHoistProblem,G
 from jsplab.cbd import GameObject,EventManager
 from typing import List,Union
 import logging,math,random
@@ -21,7 +21,47 @@ class JobShop:
         self.center.subscribe('on_hoist_drop',self.on_hoist_drop)
         self.reset()
     
-
+    def select_hoists_by_offset(self,offset)->List[int]:
+        safe_dis=G.HOIST_SAFE_DISTANCE
+        n=self.num_hoists
+        if offset==self.problem.min_offset:
+            return [0]
+        if offset==self.problem.max_offset:
+            return [n-1]
+    
+        hs=set(range(n))
+        
+        dx1=abs(offset-self.problem.min_offset)
+        n1=dx1//safe_dis
+        hs=hs-set(range(n1,n)) #左边的安全要求
+        dx2=abs(self.problem.max_offset-offset)
+        n2=n-dx2//safe_dis
+        hs=hs-set(range(0,n2))
+        return list(hs)
+        # for i,h in enumerate(self.hoists):
+        #     if  i*safe_dis
+    def make_jobs(self):
+        cfg:MultiHoistProblem=self.problem
+        #num_hoists=self.num_hoists
+        offsets=cfg.tank_offsets
+        min_offset,max_offset=min(offsets),max(offsets)
+        rt=[]
+        for job_index,proc in enumerate(cfg.procs):
+            tasks=[]
+            for step in proc:
+                task=Task(step)
+                task.can_move_hoists=self.select_hoists_by_offset(step.offset)
+                #print(task,task.can_move_hoists)
+                # if step.offset==min_offset:
+                #     task.can_move_hoists=[0]
+                # elif step.offset==max_offset:
+                #     task.can_move_hoists=[num_hoists-1]
+                # else:
+                #     task.can_move_hoists=list(range(num_hoists)) #todo fix by safe distance
+                tasks.append(task)
+            rt.append(Job(job_index,tasks))
+            #print(rt[-1].x)
+        return rt
     def start_job(self):
         if len(self.todo)<1:
             return
@@ -36,7 +76,9 @@ class JobShop:
         from_tank = self.look_tank_by_hoist(hoist)
         if from_tank!=None:
             job=from_tank.pop_job()
+            job.finished_cur_task(from_tank.timer)
             hoist.carring=job
+            
 
     def look_tank_by_hoist(self, hoist):
         from_tank=None
@@ -51,16 +93,15 @@ class JobShop:
         job:Job=hoist.carring
         logger.info(f'{hoist} drop')
         if job!=None:
-            next_task=job.next_task
-            if next_task!=None:
-                idx=next_task.cfg.tank_index
-                tank=self.tanks[idx]
-                hoist.carring=None
-                tank.put_job(job)
+            idx=job.cur_task.cfg.tank_index
+            tank=self.tanks[idx]
+            hoist.carring=None
+            tank.put_job(job)
 
     def on_scheduling(self,tank:Tank):
         print('on_scheduling',tank)
-        tank.plan_hoist=self.hoists[0]
+        tank.plan_hoist=self.hoists[0] #todo
+        tank.carring.cur_task.select_hoist=self.hoists[0]
     def on_timeout(self,tank:Tank):
         print('on_timeout',tank)
         self.is_over=True
@@ -77,7 +118,7 @@ class JobShop:
         #self.objs:List[GameObject]=[]
         self.make_hoists()
         self.make_tanks()
-        self.jobs=Job.make_jobs(self.problem,self.num_hoists)
+        self.jobs=self.make_jobs()
         self.todo=[]
         self.todo.extend(self.jobs)
         assert self.num_jobs==len(self.jobs)
@@ -167,7 +208,7 @@ class JobShop:
                 self.tank_sprites.append(Circle(0,0,20,batch=batch))
         if len(self.job_sprites)<=0:
             for j in self.jobs:
-                self.job_sprites.append(Circle(300,300,10,color=(250,0,0,200),batch=batch))
+                self.job_sprites.append(Circle(0,0,10,color=(250,0,0,200),batch=batch))
         for i,sp in enumerate(self.hoist_sprites):
             j:Hoist=self.hoists[i]
             sp.x=(j.x+1)*64

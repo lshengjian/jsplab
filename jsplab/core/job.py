@@ -20,32 +20,15 @@ class Job:
         self.tasks:List[Task]=tasks   #deepcopy(tasks)
         self.cur_task_index=0
         self.done=False
-        self.x=10.0
-        self.y=10.0
+        self.x=5+self.job_index
+        self.y=4.0
 
     def __str__(self) -> str:
         msg= f"Job{self.job_index+1}|CurTask:{self.cur_task_index+1}\n"
         for t in self.tasks:
             msg+=str(t)+'\n'
         return msg
-    @staticmethod
-    def make_jobs(cfg:MultiHoistProblem,num_hoists=2):
-        offsets=cfg.tank_offsets
-        min_offset,max_offset=min(offsets),max(offsets)
-        rt=[]
-        for job_index,proc in enumerate(cfg.procs):
-            tasks=[]
-            for step in proc:
-                task=Task(step)
-                if step.offset==min_offset:
-                    task.can_move_hoists=[0]
-                elif step.offset==max_offset:
-                    task.can_move_hoists=[num_hoists-1]
-                else:
-                    task.can_move_hoists=list(range(num_hoists)) #todo fix by safe distance
-                tasks.append(task)
-            rt.append(Job(job_index,tasks))
-        return rt
+
 
 
     def finished_cur_task(self,op_time):
