@@ -21,25 +21,25 @@ class JobShop:
         self.center.subscribe('on_hoist_drop',self.on_hoist_drop)
         self.reset()
     
+    @staticmethod
+    def get_safe_hoists(start:int,x:float,num_hoists=2,safe_dis=1):
+        dis=abs(start-round(x))
+        k=dis//safe_dis
+        rt= set(range(num_hoists))
+        if start<=x :
+            rt1 = set(range(k+1)) 
+            return rt&rt1
+        rt1 = set(range(num_hoists-1,num_hoists-1-k-1,-1)) 
+        return rt&rt1
+
+
     def select_hoists_by_offset(self,offset)->List[int]:
         safe_dis=G.HOIST_SAFE_DISTANCE
         n=self.num_hoists
-        if offset==self.problem.min_offset:
-            return [0]
-        if offset==self.problem.max_offset:
-            return [n-1]
-    
-        hs=set(range(n))
-        
-        dx1=abs(offset-self.problem.min_offset)
-        n1=dx1//safe_dis
-        hs=hs-set(range(n1,n)) #左边的安全要求
-        dx2=abs(self.problem.max_offset-offset)
-        n2=n-dx2//safe_dis
-        hs=hs-set(range(0,n2))
-        return list(hs)
-        # for i,h in enumerate(self.hoists):
-        #     if  i*safe_dis
+        lhs=JobShop.get_safe_hoists(self.problem.min_offset,offset,self.num_hoists,G.HOIST_SAFE_DISTANCE)
+        rhs=JobShop.get_safe_hoists(self.problem.max_offset,offset,self.num_hoists,G.HOIST_SAFE_DISTANCE)
+        return list(lhs&rhs)
+
     def make_jobs(self):
         cfg:MultiHoistProblem=self.problem
         #num_hoists=self.num_hoists
@@ -72,9 +72,12 @@ class JobShop:
         return job
 
     def on_hoist_pickup(self,hoist:Hoist):
-        logger.info(f'{hoist} pickup')
-        from_tank = self.look_tank_by_hoist(hoist)
+        #from_tank = self.look_tank_by_hoist(hoist)
+        print(hoist.cmd)
+        cmd:TransportCommand=hoist.cmd
+        from_tank=self.tanks[cmd.tank1_index]
         if from_tank!=None:
+            logger.info(f'{hoist} pickup')
             job=from_tank.pop_job()
             job.finished_cur_task(from_tank.timer)
             hoist.carring=job
@@ -91,8 +94,9 @@ class JobShop:
 
     def on_hoist_drop(self,hoist:Hoist):
         job:Job=hoist.carring
-        logger.info(f'{hoist} drop')
+        
         if job!=None:
+            logger.info(f'{hoist} drop')
             idx=job.cur_task.cfg.tank_index
             tank=self.tanks[idx]
             hoist.carring=None
@@ -144,6 +148,9 @@ class JobShop:
                 h.x=self.problem.max_offset
             else:
                 h.x=self.problem.min_offset+G.HOIST_SAFE_DISTANCE*i
+            h.min_x=self.problem.min_offset+i*G.HOIST_SAFE_DISTANCE
+            k=self.num_hoists-1-i
+            h.max_x=self.problem.max_offset-k*G.HOIST_SAFE_DISTANCE
             h.fsm.add_state(FreeState(h))
             h.fsm.add_state(MovingState(h))
             h.fsm.add_state(LoweringState(h))
@@ -177,11 +184,9 @@ class JobShop:
                             self.center.publish('on_hited',self)
                             return
                     elif isinstance(h1.cmd,TransportCommand):
-                        if not self.avoid(h2, h1):
-                            return                    
+                        self.avoid(h2, h1)           
                     elif isinstance(h2.cmd,TransportCommand):
-                       if not  self.avoid(h1, h2):
-                           return
+                       self.avoid(h1, h2)
                     else:
                         self.avoid(h1, h2)  
                     
@@ -192,11 +197,14 @@ class JobShop:
         s=h1.fsm.current_state
         if isinstance(s,FreeState) or isinstance(s,MovingState):
             h1.x+=dx
-            print(f'{h2}-->{h1}')
-            return True
-        print(f'{h1} buzy!')
+            logger.info(f'{h2}-->{h1}')
+            if h1.x<h1.min_x or h1.x>h1.max_x:
+                self.is_over=True
+                logger.error(f'{h1} out bound!')
+                return
+        logger.error(f'{h1} buzy! {h2} hited!')
         self.is_over=True
-        return False
+
     
     def render(self,batch):
         if len(self.hoist_sprites)<=0:
@@ -208,7 +216,7 @@ class JobShop:
                 self.tank_sprites.append(Circle(0,0,20,batch=batch))
         if len(self.job_sprites)<=0:
             for j in self.jobs:
-                self.job_sprites.append(Circle(0,0,10,color=(250,0,0,200),batch=batch))
+                self.job_sprites.append(Circle(0,0,10,color=(250,234,60,200),batch=batch))
         for i,sp in enumerate(self.hoist_sprites):
             j:Hoist=self.hoists[i]
             sp.x=(j.x+1)*64

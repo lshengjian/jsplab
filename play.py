@@ -20,7 +20,7 @@ def on_hited(sender):
 cfg=MultiHoistProblem('mhp/t4j2.csv')
 jsp=JobShop(cfg,2)
 jsp.center.subscribe('on_hited',on_hited)
-jsp.start_job()
+job:Job=jsp.start_job()
 ################################################
 #  Set up pyglet events for input and rendering:
 ################################################
@@ -28,26 +28,26 @@ jsp.start_job()
 # def on_key_press(key, mod):
 #     if key == pyglet.window.key.RIGHT:
 #         pass
-#     if key == pyglet.window.key.LEFT:
-#         pass
-#     if key == pyglet.window.key.UP:
-#         pass
-#     if key == pyglet.window.key.DOWN:
-#         pass
+
 
 
 @window.event
 def on_key_release(key, mod):
     global cur_hoist_idx
     if key ==pyglet.window.key.RIGHT:
-        jsp.exe(cur_hoist_idx,TransportCommand(0,3) if cur_hoist_idx==0 else TransportCommand(3,6))
+        cfg1:ProcStep=job.cur_task.cfg
+        cfg2:ProcStep=job.next_task.cfg
+        jsp.exe(cur_hoist_idx,TransportCommand(cfg1.tank_index,cfg2.tank_index,cfg1.offset,cfg2.offset))
 
     if key ==pyglet.window.key.LEFT:
-        t=0 if cur_hoist_idx==0 else 3
-        jsp.exe(cur_hoist_idx,ShiftCommand(t))
+        cfg:ProcStep=job.cur_task.cfg
+        jsp.exe(cur_hoist_idx,ShiftCommand(cfg.tank_index,cfg.offset))
         
     if key==pyglet.window.key.TAB:
+        jsp.hoist_sprites[cur_hoist_idx].color=(0,255,0,100)
         cur_hoist_idx=(cur_hoist_idx+1)%2
+        jsp.hoist_sprites[cur_hoist_idx].color=(255,0,0,255)
+
         
 
 @window.event

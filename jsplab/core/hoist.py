@@ -2,11 +2,15 @@ from jsplab.cbd import IState,FSM,Component,EventManager
 from dataclasses import dataclass
 from jsplab.conf import G
 from .job import Job
+
 @dataclass
 class ShiftCommand:
+    tank_index:int=0
     target:float=0
 @dataclass
 class TransportCommand:
+    tank1_index:int=0
+    tank2_index:int=0
     tank1_offset:float=0
     tank2_offset:float=0
     urgency:int =0
@@ -19,6 +23,8 @@ class Hoist(Component):
         self.fsm:FSM=FSM()
         self.x:float=0
         self.y:float=0
+        self.min_x:float=0
+        self.max_x:float=0
         self.dx:float=0
 
         self.speed:float=1

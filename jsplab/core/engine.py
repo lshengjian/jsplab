@@ -14,7 +14,7 @@ class Engine:
         T2 = self.V / self.a2
         D1=0.5*self.V*T1
         D2=0.5*self.V*T2
-        self.D=D1+D2 #临近距离
+        self.D=D1+D2 #临界距离
         self.T1=T1
         self.T2=T2
     def __str__(self):
