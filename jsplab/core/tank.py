@@ -11,10 +11,16 @@ class Tank(Component):
         self.free_time:float=0
         self.working_time:float=0
         self.timer:float=0
-        self.plan_hoist=None
+        #self.plan_hoist=None
 
     def __str__(self):
         return f"T{self.index+1}"
+    
+    @property
+    def plan_hoist(self):
+        if self.carring is None:
+            return None
+        return self.carring.cur_task.select_hoist
     
     def put_job(self,job:Job):
         self.carring=job

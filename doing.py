@@ -1,7 +1,9 @@
-from jsplab.core.jobshop import JobShop
+from jsplab.conf import MultiHoistProblem
 
 if __name__ == "__main__":
-    hs1=JobShop.get_safe_hoists(0,1,3,2)
-    assert hs1=={0}
-    hs2=JobShop.get_safe_hoists(9,8,3,2)
-    assert hs2=={2}
+    cfg=MultiHoistProblem()
+    t1,t2=cfg.get_times_ticks()
+    for job_idx in t1:
+        print(f'J{job_idx+1}')
+        for mi in range(len(t1[job_idx])):
+            print(f'  M{mi+1}:{t1[job_idx][mi]}|{t2[job_idx][mi]}')

@@ -8,8 +8,9 @@ from jsplab.utils import TextHelper
 ProcStep= namedtuple("ProcStep", "tank_index offset min_time max_time")
 
 class MultiHoistProblem:
-    def __init__(self,fpath='mhp/h2j2.csv'):
+    def __init__(self,fpath='mhp/t4j2.csv'):
         self.tank_offsets:List[int]=[]
+        self._num_hoists=1
         self.procs:List[List[ProcStep]]=[]
         data_root=Path(__file__).parent.parent.parent
         lines=TextHelper.get_data(data_root/f'data/{fpath}')
@@ -18,8 +19,7 @@ class MultiHoistProblem:
         
         self.min_offset=min(self.tank_offsets)
         self.max_offset=max(self.tank_offsets)
-
-        
+       
         for i in range(1,len(lines),3):
             steps=[]
             ts=lines[i]
@@ -31,9 +31,37 @@ class MultiHoistProblem:
             self.procs.append(steps)
         
 
+    @property 
+    def num_hoists(self)->int:
+        return self._num_hoists
+    
+    @num_hoists.setter
+    def num_hoists(self,m=2):
+        self._num_hoists=m
 
 
-
+    def get_times_ticks(self,up_time=2,down_time=2,speed=1):
+        ticks=defaultdict(list) #移动i的相对时间，位置
+        times=defaultdict(list) #移动i的时间起点
+        for job_idx,proc in enumerate(self.procs):
+            print(job_idx+1)
+            for i in range(1,len(proc)):
+                
+                s1=proc[i-1]
+                s2=proc[i]
+                print(s2)
+                op_time=0 if i==1 else s1.min_time
+                dt=abs(s2.offset-s1.offset)//speed
+                ticks[job_idx].append([(0,s1.offset),(up_time,s1.offset),(up_time+dt,s2.offset),(up_time+dt+down_time,s2.offset)])
+                if i==1:
+                    times[job_idx].append(0)
+                else:
+                    t0=times[job_idx][-1]
+                    mt0=ticks[job_idx][-1][-1][0]
+                    times[job_idx].append(t0+mt0+op_time)
+                    
+                    print(t0,mt0,op_time)
+        return times,ticks
 
 # def get_tanks(shop:str,opkey:Dict[str,int])->Dict[int,TankConfig]:
 #     fpath=Path(__file__).parent.parent.parent/f'conf/{shop}/tanks.csv'

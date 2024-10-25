@@ -104,8 +104,8 @@ class JobShop:
 
     def on_scheduling(self,tank:Tank):
         print('on_scheduling',tank)
-        tank.plan_hoist=self.hoists[0] #todo
         tank.carring.cur_task.select_hoist=self.hoists[0]
+        
     def on_timeout(self,tank:Tank):
         print('on_timeout',tank)
         self.is_over=True
