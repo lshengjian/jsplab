@@ -1,23 +1,19 @@
 from ortools.sat.python import cp_model
 from collections import defaultdict,namedtuple
 import matplotlib.pyplot as plt
-from jsplab.conf.mhp import MultiHoistProblem
+from jsplab.conf import MultiHoistProblem
 # 创建模型
 model = cp_model.CpModel()
 hoists_pos = defaultdict(list)
 hoists_steps = defaultdict(list)
-cfg=MultiHoistProblem('mhp/t4j2.csv')
-UP=1
-DOWN=1
-print(cfg.min_offset,cfg.max_offset)
-print(cfg.tank_offsets)
-
-
-
 num_hoists=2
 T=22
 horizon=2*T
 R=2
+cfg=MultiHoistProblem()
+cfg.reset()
+ts=cfg.get_times_ticks()
+
 data=[
     [(0,0),(4,2),(11,0),(16,3)],
     [(0+T,3),(5+T,6),(11+T,2),(17+T,6)],

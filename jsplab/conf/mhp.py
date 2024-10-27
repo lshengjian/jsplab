@@ -2,16 +2,44 @@ from  functools  import lru_cache
 from pathlib import Path
 import numpy as np
 from typing import Dict,List
+from dataclasses import dataclass
 from collections import namedtuple,defaultdict
+from sortedcontainers import SortedDict 
 from jsplab.utils import TextHelper
+from jsplab.conf import G
 # OpConfig = namedtuple("OpConfig", "key name color")
-ProcStep= namedtuple("ProcStep", "tank_index offset min_time max_time")
-
+#ProcStep= namedtuple("ProcStep", "tank_index offset min_time max_time")
+#HoistPos= namedtuple("HoistPos", "tick x")
+@dataclass
+class HoistPos:
+    tick:int
+    x:int
+    def __str__(self):
+        return f"{self.tick}|{self.x}"
+    def __repr__(self) -> str:
+        return self.__str__()
+@dataclass
+class ProcStep:
+    tank_index:int
+    offset:int
+    min_time:int
+    max_time:int
+    def __repr__(self) -> str:
+        return self.__str__()
+    def __str__(self):
+        return f"T{self.tank_index+1}|{self.offset} {self.min_time}->{self.max_time}"
 class MultiHoistProblem:
-    def __init__(self,fpath='mhp/t4j2.csv'):
+    def __init__(self,fpath='mhp/t4j2.csv',num_hoists=2):
         self.tank_offsets:List[int]=[]
-        self._num_hoists=1
         self.procs:List[List[ProcStep]]=[]
+        self._num_hoists=num_hoists
+        self.reset(fpath)
+        
+        
+    def reset(self,fpath:str):
+        for p in self.procs:
+            p.clear()
+        self.procs.clear()
         data_root=Path(__file__).parent.parent.parent
         lines=TextHelper.get_data(data_root/f'data/{fpath}')
         for i,d in enumerate(lines[0]):
@@ -19,7 +47,7 @@ class MultiHoistProblem:
         
         self.min_offset=min(self.tank_offsets)
         self.max_offset=max(self.tank_offsets)
-       
+    
         for i in range(1,len(lines),3):
             steps=[]
             ts=lines[i]
@@ -29,7 +57,6 @@ class MultiHoistProblem:
                 tank_index=ts[j]
                 steps.append(ProcStep(tank_index,self.tank_offsets[tank_index],opt1[j],opt2[j]))
             self.procs.append(steps)
-        
 
     @property 
     def num_hoists(self)->int:
@@ -39,29 +66,61 @@ class MultiHoistProblem:
     def num_hoists(self,m=2):
         self._num_hoists=m
 
+    @staticmethod
+    def get_left_hoists(start:int,x:float,num_hoists=2,safe_dis=1):
+        assert start<=x
+        dis=abs(start-round(x))
+        k=dis//safe_dis
+        rt= set(range(num_hoists))
+        rt1 = set(range(k+1)) 
+        return rt&rt1
 
+    
+    @staticmethod
+    def get_right_hoists(start:int,x:float,num_hoists=2,safe_dis=1):
+        assert start>=x
+        dis=abs(start-round(x))
+        k=dis//safe_dis
+        rt= set(range(num_hoists))
+        rt1 = set(range(num_hoists-1,num_hoists-1-k-1,-1)) 
+        return rt&rt1
+    
+    def get_hoist_bound(self,hoist_index):
+        n=self.num_hoists
+        D=G.HOIST_SAFE_DISTANCE
+        k=n-1-hoist_index
+        x1=self.min_offset+hoist_index*D
+        x2=self.max_offset-k*D
+        assert x1<x2
+        return (x1,x2)
+    
+    def select_hoists_by_offset(self,offset)->List[int]:
+        n=self.num_hoists
+        D=G.HOIST_SAFE_DISTANCE
+        lhs=self.get_left_hoists(self.min_offset,offset,n,D)
+        rhs=self.get_right_hoists(self.max_offset,offset,n,D)
+        print(lhs,rhs)
+        return list(lhs&rhs)
+    
     def get_times_ticks(self,up_time=2,down_time=2,speed=1):
-        ticks=defaultdict(list) #移动i的相对时间，位置
-        times=defaultdict(list) #移动i的时间起点
-        for job_idx,proc in enumerate(self.procs):
-            print(job_idx+1)
+        rt=[]
+        for proc_idx,proc in enumerate(self.procs):
+            # print(f'P{proc_idx+1}')
+            times=SortedDict() #key:移动i的起点
+            t0=0
             for i in range(1,len(proc)):
-                
                 s1=proc[i-1]
                 s2=proc[i]
-                print(s2)
-                op_time=0 if i==1 else s1.min_time
+                # print(s1,s2)
+                op_time=s2.min_time
                 dt=abs(s2.offset-s1.offset)//speed
-                ticks[job_idx].append([(0,s1.offset),(up_time,s1.offset),(up_time+dt,s2.offset),(up_time+dt+down_time,s2.offset)])
-                if i==1:
-                    times[job_idx].append(0)
-                else:
-                    t0=times[job_idx][-1]
-                    mt0=ticks[job_idx][-1][-1][0]
-                    times[job_idx].append(t0+mt0+op_time)
-                    
-                    print(t0,mt0,op_time)
-        return times,ticks
+                times[t0]=[HoistPos(0,s1.offset),HoistPos(up_time,s1.offset),
+                           HoistPos(up_time+dt,s2.offset),HoistPos(up_time+dt+down_time,s2.offset)]
+                # print(t0,times[t0])
+                t0+=up_time+dt+down_time+op_time
+            rt.append(times)
+
+        return rt
 
 # def get_tanks(shop:str,opkey:Dict[str,int])->Dict[int,TankConfig]:
 #     fpath=Path(__file__).parent.parent.parent/f'conf/{shop}/tanks.csv'

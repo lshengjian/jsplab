@@ -8,9 +8,8 @@ from pyglet.shapes import Circle,BorderedRectangle
 logger = logging.getLogger(__name__.split('.')[-1])
 
 class JobShop:
-    def __init__(self,p:MultiHoistProblem,num_hoists=2):
+    def __init__(self,p:MultiHoistProblem):
         self.problem:MultiHoistProblem=p
-        self.num_hoists=num_hoists
         self.num_jobs=len(p.procs)
         self.hoists:List[Hoist]=[]
         self.tanks:List[Tank]=[]
@@ -21,36 +20,21 @@ class JobShop:
         self.center.subscribe('on_hoist_drop',self.on_hoist_drop)
         self.reset()
     
-    @staticmethod
-    def get_safe_hoists(start:int,x:float,num_hoists=2,safe_dis=1):
-        dis=abs(start-round(x))
-        k=dis//safe_dis
-        rt= set(range(num_hoists))
-        if start<=x :
-            rt1 = set(range(k+1)) 
-            return rt&rt1
-        rt1 = set(range(num_hoists-1,num_hoists-1-k-1,-1)) 
-        return rt&rt1
-
-
-    def select_hoists_by_offset(self,offset)->List[int]:
-        safe_dis=G.HOIST_SAFE_DISTANCE
-        n=self.num_hoists
-        lhs=JobShop.get_safe_hoists(self.problem.min_offset,offset,self.num_hoists,G.HOIST_SAFE_DISTANCE)
-        rhs=JobShop.get_safe_hoists(self.problem.max_offset,offset,self.num_hoists,G.HOIST_SAFE_DISTANCE)
-        return list(lhs&rhs)
+    @property 
+    def num_hoists(self)->int:
+        return self.problem.num_hoists
 
     def make_jobs(self):
         cfg:MultiHoistProblem=self.problem
         #num_hoists=self.num_hoists
-        offsets=cfg.tank_offsets
-        min_offset,max_offset=min(offsets),max(offsets)
+        
+        min_offset,max_offset=self.problem.min_offset,self.problem.max_offset
         rt=[]
         for job_index,proc in enumerate(cfg.procs):
             tasks=[]
             for step in proc:
                 task=Task(step)
-                task.can_move_hoists=self.select_hoists_by_offset(step.offset)
+                task.can_move_hoists=self.problem.select_hoists_by_offset(step.offset)
                 #print(task,task.can_move_hoists)
                 # if step.offset==min_offset:
                 #     task.can_move_hoists=[0]
