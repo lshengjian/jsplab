@@ -99,7 +99,7 @@ class MultiHoistProblem:
         D=G.HOIST_SAFE_DISTANCE
         lhs=self.get_left_hoists(self.min_offset,offset,n,D)
         rhs=self.get_right_hoists(self.max_offset,offset,n,D)
-        print(lhs,rhs)
+        #print(lhs,rhs)
         return list(lhs&rhs)
     
     def get_times_ticks(self,up_time=2,down_time=2,speed=1):
