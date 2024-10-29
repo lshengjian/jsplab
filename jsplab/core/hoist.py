@@ -25,7 +25,7 @@ class Hoist(Component):
         self.y:float=0
         self.min_x:float=0
         self.max_x:float=0
-        self.dx:float=0
+        #self.dx:float=0
 
         self.speed:float=1
         self.speed_y:float=0.25
@@ -52,8 +52,8 @@ class FreeState(IState):
         self.hoist: Hoist=h
     def enter(self):
         self.hoist.cmd=None
-        self.hoist.dx=0
-        #print(f'{self.hoist.code} enter FreeState')
+        #self.hoist.dx=0
+        print(f'{self.hoist.code} enter FreeState')
     def exit(self):
         pass
         #print('exit FreeState')
@@ -120,7 +120,7 @@ class MovingState(IState):
                 target=self.hoist.cmd.tank1_offset
         self.target=target
 
-        self.hoist.dx=1 if target>self.hoist.x else -1
+        #self.hoist.dx=1 if target>self.hoist.x else -1
 
     def exit(self):
         self.target=None

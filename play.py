@@ -1,4 +1,5 @@
 import pyglet
+from collections import defaultdict
 from jsplab.core import *
 from jsplab.conf.mhp import MultiHoistProblem
 from jsplab.core.jobshop import JobShop
@@ -17,10 +18,14 @@ cur_hoist_idx=0
 def on_hited(sender):
     print('too close')
     pyglet.app.exit()
-cfg=MultiHoistProblem('mhp/t4j2.csv')
-jsp=JobShop(cfg,2)
+cfg=MultiHoistProblem('mhp/t4j2.csv',2)
+jsp=JobShop(cfg)
 jsp.center.subscribe('on_hited',on_hited)
-job:Job=jsp.start_job()
+#job:Job=jsp.start_job()
+cmds=defaultdict(list)
+cmds[0].extend([TransportCommand(0,1,0,2),TransportCommand(0,2,0,3)])
+cmds[1].extend([TransportCommand(1,3,2,6),TransportCommand(2,3,3,6)])
+jsp.cmds=cmds
 ################################################
 #  Set up pyglet events for input and rendering:
 ################################################

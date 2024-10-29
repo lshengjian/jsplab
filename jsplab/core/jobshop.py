@@ -4,6 +4,7 @@ from jsplab.conf import MultiHoistProblem,G
 from jsplab.cbd import GameObject,EventManager
 from typing import List,Union
 import logging,math,random
+
 from pyglet.shapes import Circle,BorderedRectangle
 logger = logging.getLogger(__name__.split('.')[-1])
 
@@ -14,6 +15,7 @@ class JobShop:
         self.hoists:List[Hoist]=[]
         self.tanks:List[Tank]=[]
         self.center=EventManager()
+        self.center.subscribe('on_start_tank_empty',self.on_start_tank_empty)
         self.center.subscribe('on_scheduling',self.on_scheduling)
         self.center.subscribe('on_timeout',self.on_timeout)
         self.center.subscribe('on_hoist_pickup',self.on_hoist_pickup)
@@ -23,7 +25,8 @@ class JobShop:
     @property 
     def num_hoists(self)->int:
         return self.problem.num_hoists
-
+    def on_start_tank_empty(self,tank):
+        self.start_job()
     def make_jobs(self):
         cfg:MultiHoistProblem=self.problem
         #num_hoists=self.num_hoists
@@ -49,22 +52,26 @@ class JobShop:
     def start_job(self):
         if len(self.todo)<1:
             return
-        job=random.choice(self.todo)
-        self.todo.remove(job)
+        # job=random.choice(self.todo)
+        # self.todo.remove(job)
+        job=self.todo.pop(0)
         logger.info(f'start {job}')
         self.tanks[0].put_job(job)
+
         return job
 
     def on_hoist_pickup(self,hoist:Hoist):
         #from_tank = self.look_tank_by_hoist(hoist)
-        print(hoist.cmd)
+        #print(hoist.cmd)
         cmd:TransportCommand=hoist.cmd
         from_tank=self.tanks[cmd.tank1_index]
         if from_tank!=None:
-            logger.info(f'{hoist} pickup')
             job=from_tank.pop_job()
+            logger.info(f'{hoist} pickup {job}')
+            
             job.finished_cur_task(from_tank.timer)
             hoist.carring=job
+
             
 
     def look_tank_by_hoist(self, hoist):
@@ -87,12 +94,33 @@ class JobShop:
             tank.put_job(job)
 
     def on_scheduling(self,tank:Tank):
-        print('on_scheduling',tank)
-        tank.carring.cur_task.select_hoist=self.hoists[0]
+       
+        for h in self.cmds:
+            if len(self.cmds[h])<1:
+                continue
+            cmd:TransportCommand=self.cmds[h][0]
+            if cmd.tank1_index==tank.index:
+                tank.carring.cur_task.select_hoist=self.hoists[h]
+                logger.info(f'scheduling {self.hoists[h].code} for {tank}')
+                break
         
     def on_timeout(self,tank:Tank):
         print('on_timeout',tank)
         self.is_over=True
+
+    def send_command(self):
+        cmds=self.cmds
+        for h in cmds:
+            if self.hoists[h].cmd is None and len(cmds[h])>0:
+                cmd:TransportCommand=cmds[h][0]
+                job:Job=self.tanks[cmd.tank1_index].carring
+                if job!=None and job.cur_task.select_hoist==self.hoists[h]:
+                    self.hoists[h].cmd=cmd
+                    cmds[h].pop(0)
+
+
+        
+
     def exe(self,hoist_id,cmd:Union[ShiftCommand,TransportCommand]):
         self.hoists[hoist_id].cmd=cmd
 
@@ -104,12 +132,14 @@ class JobShop:
         self.hoists.clear()
         self.tanks.clear()
         #self.objs:List[GameObject]=[]
-        self.make_hoists()
-        self.make_tanks()
+
         self.jobs=self.make_jobs()
         self.todo=[]
         self.todo.extend(self.jobs)
+        self.make_hoists()
+        self.make_tanks()
         assert self.num_jobs==len(self.jobs)
+
 
     def make_tanks(self):
         for i,offset in enumerate(self.problem.tank_offsets):
@@ -119,6 +149,9 @@ class JobShop:
             t.x=offset
             t.center=self.center
             self.tanks.append(t)
+            t.reset()
+            
+            
 
     def make_hoists(self):
         for i in range(self.num_hoists):
@@ -146,6 +179,7 @@ class JobShop:
     def update(self,dt,t):
         if self.is_over:
             return
+        self.send_command()
         for h in self.hoists:
             h.game_object.update(dt,t)
         for t in self.tanks:

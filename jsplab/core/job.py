@@ -11,7 +11,7 @@ class Task:
         self.select_hoist=None
 
     def __str__(self) -> str:
-        return f"{self.cfg.offset} {self.cfg.min_time}->{self.cfg.max_time}"#{self.op_time}|{self.select_hoist}
+        return f"{self.cfg.offset}|{self.cfg.min_time}->{self.cfg.max_time}"#{self.op_time}|{self.select_hoist}
 
 class Job:
     def __init__(self,index=0,tasks:List[Task]=None):
@@ -25,8 +25,8 @@ class Job:
 
     def __str__(self) -> str:
         msg= f"Job{self.job_index+1}|CurTask:{self.cur_task_index+1}\n"
-        for t in self.tasks:
-            msg+=str(t)+'\n'
+        for i,t in enumerate(self.tasks):
+            msg+=str(t)+' '# if i<len(self.tasks)-1 else ''
         return msg
 
 

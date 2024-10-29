@@ -11,7 +11,12 @@ class Tank(Component):
         self.free_time:float=0
         self.working_time:float=0
         self.timer:float=0
-        #self.plan_hoist=None
+        #self.req_hoist=False
+    
+    def reset(self):
+        #self.req_hoist=False
+        if self.index==0 and self.center!=None:
+            self.center.publish('on_start_tank_empty',self)
 
     def __str__(self):
         return f"T{self.index+1}"
@@ -24,15 +29,18 @@ class Tank(Component):
     
     def put_job(self,job:Job):
         self.carring=job
+        job.cur_task.select_hoist=None
         self.timer=0
-        self.plan_hoist=None
+        #self.plan_hoist=None
         job.x=self.x
         job.y=0.0
 
     def pop_job(self)->Job:
         job=self.carring
         self.carring=None
-        self.plan_hoist=None
+        if self.index==0 and self.center!=None:
+            self.center.publish('on_start_tank_empty',self)
+        #self.plan_hoist=None
         return job
     
     def update(self,delta_time:float,total_time):
