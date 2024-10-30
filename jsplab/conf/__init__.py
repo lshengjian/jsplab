@@ -1,5 +1,5 @@
 from .constant import G
-from .mhp import MultiHoistProblem
+from .mhp import MultiHoistProblem,HoistPos
 # PROC={
 #     "A":{
 #         "num":1,

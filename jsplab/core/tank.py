@@ -13,10 +13,10 @@ class Tank(Component):
         self.timer:float=0
         #self.req_hoist=False
     
-    def reset(self):
+    #def reset(self):
         #self.req_hoist=False
-        if self.index==0 and self.center!=None:
-            self.center.publish('on_start_tank_empty',self)
+        # if self.index==0 and self.center!=None:
+        #     self.center.publish('on_start_tank_empty',self)
 
     def __str__(self):
         return f"T{self.index+1}"

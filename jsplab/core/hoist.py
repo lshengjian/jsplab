@@ -1,6 +1,6 @@
 from jsplab.cbd import IState,FSM,Component,EventManager
 from dataclasses import dataclass
-from jsplab.conf import G
+from jsplab.conf import G,HoistPos
 from .job import Job
 
 @dataclass
@@ -15,6 +15,9 @@ class TransportCommand:
     tank2_offset:float=0
     urgency:int =0
 
+        
+
+    
 class Hoist(Component):
     def __init__(self):
         super().__init__()
@@ -46,7 +49,21 @@ class Hoist(Component):
             self.carring.x=self.x
             self.carring.y=self.y
 
-
+class HoistRecord(Component):
+    def __init__(self):
+        super().__init__()
+        #self.last_x:int=None
+        self.steps={}
+        
+    def update(self,delta_time:float,total_time):
+        self._hoist=self.game_object.get_component(Hoist)
+        if len(self.steps)<1:
+            self.steps[0]=self._hoist.x
+        ts=list(self.steps.keys())
+        last_x=self.steps[ts[-1]]
+        if abs(last_x-self._hoist.x)>0.9:
+            self.steps[round(total_time)]=self._hoist.x
+            print(self._hoist)
 class FreeState(IState):
     def __init__(self,h: Hoist):
         self.hoist: Hoist=h

@@ -26,7 +26,7 @@ class JobShop:
     def num_hoists(self)->int:
         return self.problem.num_hoists
     def on_start_tank_empty(self,tank):
-        self.start_job()
+        self.should_add_new_job=True
     def make_jobs(self):
         cfg:MultiHoistProblem=self.problem
         #num_hoists=self.num_hoists
@@ -91,7 +91,8 @@ class JobShop:
             idx=job.cur_task.cfg.tank_index
             tank=self.tanks[idx]
             hoist.carring=None
-            tank.put_job(job)
+            if idx!=len(self.tanks)-1:
+                tank.put_job(job)
 
     def on_scheduling(self,tank:Tank):
        
@@ -126,6 +127,7 @@ class JobShop:
 
     def reset(self):
         self.is_over=False
+        self.should_add_new_job=True
         self.hoist_sprites=[]
         self.tank_sprites=[]
         self.job_sprites=[]
@@ -149,7 +151,7 @@ class JobShop:
             t.x=offset
             t.center=self.center
             self.tanks.append(t)
-            t.reset()
+            #t.reset()
             
             
 
@@ -168,6 +170,7 @@ class JobShop:
             h.min_x=self.problem.min_offset+i*G.HOIST_SAFE_DISTANCE
             k=self.num_hoists-1-i
             h.max_x=self.problem.max_offset-k*G.HOIST_SAFE_DISTANCE
+            obj.add_component(HoistRecord)
             h.fsm.add_state(FreeState(h))
             h.fsm.add_state(MovingState(h))
             h.fsm.add_state(LoweringState(h))
@@ -179,6 +182,9 @@ class JobShop:
     def update(self,dt,t):
         if self.is_over:
             return
+        if self.should_add_new_job:
+            self.should_add_new_job=False
+            self.start_job()
         self.send_command()
         for h in self.hoists:
             h.game_object.update(dt,t)
@@ -213,15 +219,17 @@ class JobShop:
         dx=h1.x-h2.x
         dx=dx/abs(dx+G.EPS)
         s=h1.fsm.current_state
+        print(s)
         if isinstance(s,FreeState) or isinstance(s,MovingState):
             h1.x+=dx
             logger.info(f'{h2}-->{h1}')
-            if h1.x<h1.min_x or h1.x>h1.max_x:
+            if h1.x<h1.min_x-0.1 or h1.x>h1.max_x+0.1:
                 self.is_over=True
                 logger.error(f'{h1} out bound!')
                 return
-        logger.error(f'{h1} buzy! {h2} hited!')
-        self.is_over=True
+        else:
+            logger.error(f'{h1} buzy! {h2} hited!')
+            self.is_over=True
 
     
     def render(self,batch):
