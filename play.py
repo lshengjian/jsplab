@@ -3,6 +3,7 @@ from collections import defaultdict
 from jsplab.core import *
 from jsplab.conf.mhp import MultiHoistProblem
 from jsplab.core.jobshop import JobShop
+from jsplab.core.render import Render
 FPS = 24
 RESOLUTION = 720, 480
 ###############################################
@@ -11,8 +12,8 @@ RESOLUTION = 720, 480
 window = pyglet.window.Window(width=RESOLUTION[0],
                               height=RESOLUTION[1],
                               caption="My Game")
-batch = pyglet.graphics.Batch()
-timer=0
+
+
 cur_hoist_idx=0
 
 def on_hited(sender):
@@ -20,6 +21,7 @@ def on_hited(sender):
     pyglet.app.exit()
 cfg=MultiHoistProblem('mhp/t4j2.csv',2)
 jsp=JobShop(cfg)
+render=Render(jsp)
 jsp.center.subscribe('on_hited',on_hited)
 #job:Job=jsp.start_job()
 cmds=defaultdict(list)
@@ -59,14 +61,13 @@ def on_key_release(key, mod):
 def on_draw():
     # Clear the window:
     window.clear()
-    # Draw the batch of Renderables:
-    batch.draw()
+    render.draw()
+    
 
 def main(dt):
-    global timer
-    timer+=1
-    jsp.update(1,timer)
-    jsp.render(batch)
+    jsp.update(1)
+    render.update()
+    
 
 
 ####################################################

@@ -24,7 +24,7 @@ class Job:
         self.y=4.0
 
     def __str__(self) -> str:
-        msg= f"Job{self.job_index+1}|CurTask:{self.cur_task_index+1}\n"
+        msg= f"Job{self.job_index+1}|{self.cur_task_index+1}/{len(self.tasks)}\n"
         for i,t in enumerate(self.tasks):
             msg+=str(t)+' '# if i<len(self.tasks)-1 else ''
         return msg

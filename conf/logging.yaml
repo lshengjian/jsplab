@@ -25,7 +25,7 @@ loggers:
     level: DEBUG  
     handlers: [console]
     propagate: no 
-  move:
+  hoist:
     level: DEBUG  
     handlers: [console]
     propagate: no 

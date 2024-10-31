@@ -3,9 +3,8 @@ from jsplab.core import *
 from jsplab.conf import MultiHoistProblem,G
 from jsplab.cbd import GameObject,EventManager
 from typing import List,Union
-import logging,math,random
+import logging
 
-from pyglet.shapes import Circle,BorderedRectangle
 logger = logging.getLogger(__name__.split('.')[-1])
 
 class JobShop:
@@ -31,7 +30,7 @@ class JobShop:
         cfg:MultiHoistProblem=self.problem
         #num_hoists=self.num_hoists
         
-        min_offset,max_offset=self.problem.min_offset,self.problem.max_offset
+        #min_offset,max_offset=self.problem.min_offset,self.problem.max_offset
         rt=[]
         for job_index,proc in enumerate(cfg.procs):
             tasks=[]
@@ -67,9 +66,8 @@ class JobShop:
         from_tank=self.tanks[cmd.tank1_index]
         if from_tank!=None:
             job=from_tank.pop_job()
-            logger.info(f'{hoist} pickup {job}')
-            
             job.finished_cur_task(from_tank.timer)
+            logger.info(f'{hoist} pickup {job}')
             hoist.carring=job
 
             
@@ -83,8 +81,7 @@ class JobShop:
 
   
 
-    def on_hoist_drop(self,hoist:Hoist):
-        job:Job=hoist.carring
+    def on_hoist_drop(self,hoist:Hoist,job:Job):
         
         if job!=None:
             logger.info(f'{hoist} drop')
@@ -93,6 +90,12 @@ class JobShop:
             hoist.carring=None
             if idx!=len(self.tanks)-1:
                 tank.put_job(job)
+            else:
+                self.jobs.remove(job)
+                if len(self.todo)==0:
+                    logger.info(f'all jobs finished! time:{self.timer}')
+                    #self.is_over=True
+
 
     def on_scheduling(self,tank:Tank):
        
@@ -126,11 +129,10 @@ class JobShop:
         self.hoists[hoist_id].cmd=cmd
 
     def reset(self):
+        self.timer=0
         self.is_over=False
         self.should_add_new_job=True
-        self.hoist_sprites=[]
-        self.tank_sprites=[]
-        self.job_sprites=[]
+
         self.hoists.clear()
         self.tanks.clear()
         #self.objs:List[GameObject]=[]
@@ -179,7 +181,9 @@ class JobShop:
             self.hoists.append(h)
         
 
-    def update(self,dt,t):
+    def update(self,dt):
+        self.timer+=dt
+        t=self.timer
         if self.is_over:
             return
         if self.should_add_new_job:
@@ -197,7 +201,7 @@ class JobShop:
                 dis=round(abs(h1.x-h2.x))
                 
                 if (dis<G.HOIST_SAFE_DISTANCE):
-                    print(h1,h2,dis)
+                    #logger.info(h1,h2,dis)
                     if isinstance(h1.cmd,TransportCommand) and isinstance(h2.cmd,TransportCommand):
                         if h1.cmd.urgency>h2.cmd.urgency:
                             self.avoid(h2, h1)     
@@ -219,7 +223,7 @@ class JobShop:
         dx=h1.x-h2.x
         dx=dx/abs(dx+G.EPS)
         s=h1.fsm.current_state
-        print(s)
+        
         if isinstance(s,FreeState) or isinstance(s,MovingState):
             h1.x+=dx
             logger.info(f'{h2}-->{h1}')
@@ -232,28 +236,3 @@ class JobShop:
             self.is_over=True
 
     
-    def render(self,batch):
-        if len(self.hoist_sprites)<=0:
-            for j in self.hoists:
-                self.hoist_sprites.append(BorderedRectangle(0,0,48,24,color=(0,255,0,100),batch=batch))
-                #self.sprites.append(
-        if len(self.tank_sprites)<=0:
-            for t in self.tanks:
-                self.tank_sprites.append(Circle(0,0,20,batch=batch))
-        if len(self.job_sprites)<=0:
-            for j in self.jobs:
-                self.job_sprites.append(Circle(0,0,10,color=(250,234,60,200),batch=batch))
-        for i,sp in enumerate(self.hoist_sprites):
-            j:Hoist=self.hoists[i]
-            sp.x=(j.x+1)*64
-            sp.y=(j.y+1)*64
-                
-        for i,sp in enumerate(self.tank_sprites):
-            t:Tank=self.tanks[i]
-            sp.x=(t.x+1)*64
-            sp.y=64
-
-        for i,sp in enumerate(self.job_sprites):
-            j:Job=self.jobs[i]
-            sp.x=(j.x+1)*64
-            sp.y=(j.y+1)*64

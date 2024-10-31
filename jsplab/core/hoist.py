@@ -2,6 +2,8 @@ from jsplab.cbd import IState,FSM,Component,EventManager
 from dataclasses import dataclass
 from jsplab.conf import G,HoistPos
 from .job import Job
+import logging
+logger = logging.getLogger(__name__.split('.')[-1])
 
 @dataclass
 class ShiftCommand:
@@ -63,14 +65,16 @@ class HoistRecord(Component):
         last_x=self.steps[ts[-1]]
         if abs(last_x-self._hoist.x)>0.9:
             self.steps[round(total_time)]=self._hoist.x
-            print(self._hoist)
+            msg=f'{str(self._hoist)}'
+            logger.info(msg)
 class FreeState(IState):
     def __init__(self,h: Hoist):
         self.hoist: Hoist=h
     def enter(self):
         self.hoist.cmd=None
         #self.hoist.dx=0
-        print(f'{self.hoist.code} enter FreeState')
+        msg=f'{self.hoist.code} enter FreeState'
+        logger.debug(msg)
     def exit(self):
         pass
         #print('exit FreeState')
@@ -115,7 +119,7 @@ class LoweringState(IState):
         if self.hoist.y<=0:
             self.hoist.y=0
             if self.hoist.center!=None:
-                self.hoist.center.publish('on_hoist_drop',self.hoist)
+                self.hoist.center.publish('on_hoist_drop',self.hoist,self.hoist.carring)
             self.hoist.cmd=None
             self.hoist.fsm.set_state('FreeState')
 
