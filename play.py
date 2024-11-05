@@ -24,10 +24,7 @@ jsp=JobShop(cfg)
 render=Render(jsp)
 jsp.center.subscribe('on_hited',on_hited)
 #job:Job=jsp.start_job()
-cmds=defaultdict(list)
-cmds[0].extend([TransportCommand(0,1,0,2),TransportCommand(0,2,0,3)])
-cmds[1].extend([TransportCommand(1,3,2,6),TransportCommand(2,3,3,6)])
-jsp.cmds=cmds
+
 ################################################
 #  Set up pyglet events for input and rendering:
 ################################################
@@ -65,6 +62,10 @@ def on_draw():
     
 
 def main(dt):
+    # cmds=defaultdict(list)
+    # cmds[0].extend([TransportCommand(0,1,0,2),TransportCommand(0,2,0,3)])
+    # cmds[1].extend([TransportCommand(1,3,2,6),TransportCommand(2,3,3,6)])
+
     jsp.update(1)
     render.update()
     
@@ -74,6 +75,12 @@ def main(dt):
 #  Schedule a World update and start the pyglet app:
 ####################################################
 if __name__ == "__main__":
-
+    cmds=jsp.make_cmds()
+    for h,cs in cmds.items():
+        print( f'H{h}')
+        for cmd in cs:
+            print(cmd)
+            
+    jsp.cmds=cmds
     pyglet.clock.schedule_interval(main, interval=1.0/FPS)
     pyglet.app.run()

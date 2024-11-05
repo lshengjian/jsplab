@@ -3,8 +3,9 @@ from jsplab.core import *
 from jsplab.conf import MultiHoistProblem,G
 from jsplab.cbd import GameObject,EventManager
 from typing import List,Union
+import numpy as np
 import logging
-
+from collections import defaultdict
 logger = logging.getLogger(__name__.split('.')[-1])
 
 class JobShop:
@@ -122,7 +123,44 @@ class JobShop:
                     self.hoists[h].cmd=cmd
                     cmds[h].pop(0)
 
+    def make_cmds(self):
+        moves=[]
+        hs={}
+        for job_idx,job in enumerate(self.jobs):
+            moves.extend([job_idx]*(len(job.tasks)-1))
+            for i in range(1,len(job.tasks)):
+                idx=job_idx*100+i-1
+                t1:Task=job.tasks[i-1]
+                t2:Task=job.tasks[i]
+                mi_hs=set(t1.can_move_hoists)&set(t2.can_move_hoists)
+                hs[idx]=list(mi_hs)
+                #print(idx,mi_hs)
 
+        data=np.random.random(len(moves))
+        idxs=np.argsort(data)
+        ms=np.array(moves)
+        job_idxs=ms[idxs]
+
+        cmds=defaultdict(list)
+        cur_move_idx={}
+            
+        for job_idx in job_idxs:
+            if not (job_idx  in cur_move_idx):
+                cur_move_idx[job_idx]=0
+            else:
+                cur_move_idx[job_idx]+=1
+            mi=cur_move_idx[job_idx]
+            job=self.jobs[job_idx]
+            t1:Task=job.tasks[mi]
+            t2:Task=job.tasks[mi+1]
+            cmd=TransportCommand(t1.cfg.tank_index,t2.cfg.tank_index,t1.cfg.offset,t2.cfg.offset)
+            #print(job_idx,mi,cmd)
+            cmds[hs[job_idx*100+mi][0]].append(cmd)
+
+        return cmds
+
+
+        
         
 
     def exe(self,hoist_id,cmd:Union[ShiftCommand,TransportCommand]):
