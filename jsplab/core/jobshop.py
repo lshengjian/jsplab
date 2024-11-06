@@ -2,26 +2,82 @@
 from jsplab.core import *
 from jsplab.conf import MultiHoistProblem,G
 from jsplab.cbd import GameObject,EventManager
-from typing import List,Union
+from typing import List,Union,Dict
 import numpy as np
+from numpy.typing import NDArray
 import logging
 from collections import defaultdict
 logger = logging.getLogger(__name__.split('.')[-1])
 
-class JobShop:
+class MultiHoistJobShop:
     def __init__(self,p:MultiHoistProblem):
         self.problem:MultiHoistProblem=p
         self.num_jobs=len(p.procs)
         self.hoists:List[Hoist]=[]
         self.tanks:List[Tank]=[]
+        self.jobs=[]
+        self.job_seq_tasks=[]
         self.center=EventManager()
         self.center.subscribe('on_start_tank_empty',self.on_start_tank_empty)
         self.center.subscribe('on_scheduling',self.on_scheduling)
         self.center.subscribe('on_timeout',self.on_timeout)
         self.center.subscribe('on_hoist_pickup',self.on_hoist_pickup)
         self.center.subscribe('on_hoist_drop',self.on_hoist_drop)
+        
+
+    def cost(self,X:NDArray)->float:
         self.reset()
-    
+        self.cmds=self.get_solution_info(X)
+        rt=None
+        t=1
+        while len(self.jobs)>0:
+            self.update(1)
+            t+=1
+            if self.is_over:
+                rt=99999
+                break
+            rt=t
+        return rt
+    def get_move_task_hoists(self):
+        hs={}
+        for job_idx,job in enumerate(self.jobs):
+            for i in range(1,len(job.tasks)):
+                idx=job_idx*100+i-1
+                t1:Task=job.tasks[i-1]
+                t2:Task=job.tasks[i]
+                mi_hs=set(t1.can_move_hoists)&set(t2.can_move_hoists)
+                hs[idx]=list(mi_hs)
+        return hs
+
+    def get_solution_info(self,X:NDArray)->Dict[int,List[TransportCommand]]:
+        #X=X.reshape(self.shape)
+        xs=X[0]
+        idxs=np.argsort(xs)
+        seqs=np.array(self.job_seq_tasks,dtype=int)
+        job_idxs=seqs[idxs]
+        hoist_index=np.argmin(X[1:],axis=0)#有可能操作本任务的机器范围！
+        cmds=defaultdict(list)
+        cur_move_idx={}
+        hs=self.get_move_task_hoists()
+            
+        for m,job_idx in enumerate(job_idxs):
+            if not (job_idx  in cur_move_idx):
+                cur_move_idx[job_idx]=0
+            else:
+                cur_move_idx[job_idx]+=1
+            mi=cur_move_idx[job_idx]
+            job=self.jobs[job_idx]
+            t1:Task=job.tasks[mi]
+            t2:Task=job.tasks[mi+1]
+            cmd=TransportCommand(t1.cfg.tank_index,t2.cfg.tank_index,t1.cfg.offset,t2.cfg.offset)
+            hoists=hs[job_idx*100+mi]
+            cmds[hoists[hoist_index[m]%len(hoists)]].append(cmd)
+        return cmds
+ 
+    def make_random_solution(self):
+        size=len(self.job_seq_tasks)
+        data=np.random.random((3,size))
+        return data
     @property 
     def num_hoists(self)->int:
         return self.problem.num_hoists
@@ -47,7 +103,7 @@ class JobShop:
                 #     task.can_move_hoists=list(range(num_hoists)) #todo fix by safe distance
                 tasks.append(task)
             rt.append(Job(job_index,tasks))
-            #print(rt[-1].x)
+
         return rt
     def start_job(self):
         if len(self.todo)<1:
@@ -123,41 +179,7 @@ class JobShop:
                     self.hoists[h].cmd=cmd
                     cmds[h].pop(0)
 
-    def make_cmds(self):
-        moves=[]
-        hs={}
-        for job_idx,job in enumerate(self.jobs):
-            moves.extend([job_idx]*(len(job.tasks)-1))
-            for i in range(1,len(job.tasks)):
-                idx=job_idx*100+i-1
-                t1:Task=job.tasks[i-1]
-                t2:Task=job.tasks[i]
-                mi_hs=set(t1.can_move_hoists)&set(t2.can_move_hoists)
-                hs[idx]=list(mi_hs)
-                #print(idx,mi_hs)
 
-        data=np.random.random(len(moves))
-        idxs=np.argsort(data)
-        ms=np.array(moves)
-        job_idxs=ms[idxs]
-
-        cmds=defaultdict(list)
-        cur_move_idx={}
-            
-        for job_idx in job_idxs:
-            if not (job_idx  in cur_move_idx):
-                cur_move_idx[job_idx]=0
-            else:
-                cur_move_idx[job_idx]+=1
-            mi=cur_move_idx[job_idx]
-            job=self.jobs[job_idx]
-            t1:Task=job.tasks[mi]
-            t2:Task=job.tasks[mi+1]
-            cmd=TransportCommand(t1.cfg.tank_index,t2.cfg.tank_index,t1.cfg.offset,t2.cfg.offset)
-            #print(job_idx,mi,cmd)
-            cmds[hs[job_idx*100+mi][0]].append(cmd)
-
-        return cmds
 
 
         
@@ -175,7 +197,17 @@ class JobShop:
         self.tanks.clear()
         #self.objs:List[GameObject]=[]
 
-        self.jobs=self.make_jobs()
+        self.jobs.clear()
+        self.jobs.extend(self.make_jobs())
+        self.job_seq_tasks.clear()
+        job_starts={0:0}
+        total=0
+        for j_idx,job in enumerate(self.jobs):
+            js=[j_idx]*(len(job.tasks)-1) #两个加工之间一次搬运
+            job_starts[j_idx]=total
+            total+=len(js)
+            self.job_seq_tasks.extend(js)
+        self.start_task_job=job_starts
         self.todo=[]
         self.todo.extend(self.jobs)
         self.make_hoists()

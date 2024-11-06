@@ -2,7 +2,7 @@ import pyglet
 from collections import defaultdict
 from jsplab.core import *
 from jsplab.conf.mhp import MultiHoistProblem
-from jsplab.core.jobshop import JobShop
+from jsplab.core.jobshop import MultiHoistJobShop
 from jsplab.core.render import Render
 FPS = 24
 RESOLUTION = 720, 480
@@ -20,7 +20,7 @@ def on_hited(sender):
     print('too close')
     pyglet.app.exit()
 cfg=MultiHoistProblem('mhp/t4j2.csv',2)
-jsp=JobShop(cfg)
+jsp=MultiHoistJobShop(cfg)
 render=Render(jsp)
 jsp.center.subscribe('on_hited',on_hited)
 #job:Job=jsp.start_job()
@@ -75,12 +75,7 @@ def main(dt):
 #  Schedule a World update and start the pyglet app:
 ####################################################
 if __name__ == "__main__":
-    cmds=jsp.make_cmds()
-    for h,cs in cmds.items():
-        print( f'H{h}')
-        for cmd in cs:
-            print(cmd)
-            
-    jsp.cmds=cmds
-    pyglet.clock.schedule_interval(main, interval=1.0/FPS)
-    pyglet.app.run()
+    xs=jsp.make_random_solution()
+    print(jsp.cost(xs))
+    # pyglet.clock.schedule_interval(main, interval=1.0/FPS)
+    # pyglet.app.run()
