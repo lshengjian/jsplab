@@ -1,9 +1,9 @@
 from jsplab.agents.solver import OrToolSolver
-from jsplab.conf.mhp import MultiHoistProblem
+from jsplab.conf.mhp import ConfigMHP
 
 def main() -> None:
-    #p=MultiHoistProblem('mhp/t4j2.csv',2)
-    p=MultiHoistProblem('mhp/demo.csv',3)
+    p=ConfigMHP('mhp/t4j2.csv',2)
+    #p=ConfigMHP('mhp/demo.csv',3)
     solver=OrToolSolver(p)
     ticks, horizon = solver.get_max_time()
     print(horizon)

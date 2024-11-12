@@ -1,10 +1,10 @@
 from ortools.sat.python import cp_model
 from collections import defaultdict,namedtuple
 import matplotlib.pyplot as plt
-from jsplab.conf.mhp import MultiHoistProblem
+from jsplab.conf.mhp import ConfigMHP
 
 class OrToolSolver:
-    def __init__(self,p:MultiHoistProblem,up_time=1,down_time=1):
+    def __init__(self,p:ConfigMHP,up_time=1,down_time=1):
         self.problem=p
         self.hoists_pos = defaultdict(list)
         self.hoists_steps = defaultdict(list)

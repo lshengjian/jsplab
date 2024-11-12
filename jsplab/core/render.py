@@ -1,4 +1,4 @@
-from .jobshop import MultiHoistJobShop
+from .mhp import MultiHoistProblem
 import pyglet
 from pyglet.shapes import Circle,BorderedRectangle
 from .hoist import Hoist
@@ -6,8 +6,8 @@ from .tank import Tank
 from .job import Job
 OFFSET=(1,1)
 class Render:
-    def __init__(self,shop: MultiHoistJobShop):
-        self.shop: MultiHoistJobShop=shop
+    def __init__(self,shop: MultiHoistProblem):
+        self.shop: MultiHoistProblem=shop
         self.hoist_sprites=[]
         self.tank_sprites=[]
         self.job_sprites=[]

@@ -1,7 +1,7 @@
 from ortools.sat.python import cp_model
 from collections import defaultdict,namedtuple
 import matplotlib.pyplot as plt
-from jsplab.conf import MultiHoistProblem
+from jsplab.conf import ConfigMHP
 # 创建模型
 model = cp_model.CpModel()
 hoists_pos = defaultdict(list)
@@ -10,7 +10,7 @@ num_hoists=2
 T=22
 horizon=2*T
 R=2
-cfg=MultiHoistProblem()
+cfg=ConfigMHP()
 cfg.reset()
 ts=cfg.get_times_ticks()
 

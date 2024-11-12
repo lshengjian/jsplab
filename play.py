@@ -1,8 +1,8 @@
 import pyglet
 from collections import defaultdict
 from jsplab.core import *
-from jsplab.conf.mhp import MultiHoistProblem
-from jsplab.core.jobshop import MultiHoistJobShop
+from jsplab.conf.mhp import ConfigMHP
+from jsplab.core.mhp import MultiHoistProblem
 from jsplab.core.render import Render
 FPS = 24
 RESOLUTION = 720, 480
@@ -19,11 +19,13 @@ cur_hoist_idx=0
 def on_hited(sender):
     print('too close')
     pyglet.app.exit()
-cfg=MultiHoistProblem('mhp/t4j2.csv',2)
-jsp=MultiHoistJobShop(cfg)
+
+cfg=ConfigMHP('mhp/t4j2.csv',2)
+#cfg=ConfigMHP('mhp/demo.csv',3)
+jsp=MultiHoistProblem(cfg)
 render=Render(jsp)
 jsp.center.subscribe('on_hited',on_hited)
-#job:Job=jsp.start_job()
+job:Job=jsp.start_job()
 
 ################################################
 #  Set up pyglet events for input and rendering:
@@ -62,9 +64,6 @@ def on_draw():
     
 
 def main(dt):
-    # cmds=defaultdict(list)
-    # cmds[0].extend([TransportCommand(0,1,0,2),TransportCommand(0,2,0,3)])
-    # cmds[1].extend([TransportCommand(1,3,2,6),TransportCommand(2,3,3,6)])
 
     jsp.update(1)
     render.update()
@@ -75,7 +74,7 @@ def main(dt):
 #  Schedule a World update and start the pyglet app:
 ####################################################
 if __name__ == "__main__":
-    xs=jsp.make_random_solution()
-    print(jsp.cost(xs))
-    # pyglet.clock.schedule_interval(main, interval=1.0/FPS)
-    # pyglet.app.run()
+    # xs=jsp.make_random_solution()
+    # print(jsp.cost(xs))
+    pyglet.clock.schedule_interval(main, interval=1.0/FPS)
+    pyglet.app.run()

@@ -1,16 +1,16 @@
-from jsplab.conf.mhp import MultiHoistProblem
+from jsplab.conf.mhp import ConfigMHP
 
 # import time
 # start_time = time.perf_counter()
 def test_bound():
-    p=MultiHoistProblem('mhp/t4j2.csv',2)
+    p=ConfigMHP('mhp/t4j2.csv',2)
     bd=p.get_hoist_bound(0)
     assert (0,4)==bd
     bd=p.get_hoist_bound(1)
     assert (2,6)==bd
 
 def test_validate_hoists():
-    p=MultiHoistProblem('mhp/t4j2.csv',2)
+    p=ConfigMHP('mhp/t4j2.csv',2)
     hs=p.select_hoists_by_offset(0)
     assert [0]==hs
     hs=p.select_hoists_by_offset(1)

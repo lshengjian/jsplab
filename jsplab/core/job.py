@@ -1,7 +1,7 @@
 
 from typing import List
 #from copy import deepcopy
-from jsplab.conf.mhp import MultiHoistProblem,ProcStep
+from jsplab.conf.mhp import ConfigMHP,ProcStep
 
 class Task:
     def __init__(self,cfg:ProcStep):

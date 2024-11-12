@@ -28,8 +28,9 @@ class ProcStep:
         return self.__str__()
     def __str__(self):
         return f"T{self.tank_index+1}|{self.offset} {self.min_time}->{self.max_time}"
-class MultiHoistProblem:
+class ConfigMHP:
     def __init__(self,fpath='mhp/t4j2.csv',num_hoists=2):
+
         self.tank_offsets:List[int]=[]
         self.procs:List[List[ProcStep]]=[]
         self._num_hoists=num_hoists
@@ -41,7 +42,9 @@ class MultiHoistProblem:
             p.clear()
         self.procs.clear()
         data_root=Path(__file__).parent.parent.parent
-        lines=TextHelper.get_data(data_root/f'data/{fpath}')
+        fname=data_root/f'data/{fpath}'
+        self._name=fname.stem
+        lines=TextHelper.get_data(fname)
         for i,d in enumerate(lines[0]):
             self.tank_offsets.append(d)
         

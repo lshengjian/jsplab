@@ -19,11 +19,17 @@ handlers:
     encoding: utf-8
     maxBytes: 120000
     backupCount: 3
+
 loggers:
   mhp:
     level: DEBUG  
     handlers: [console]
     propagate: no 
+  hoist:
+    level: DEBUG  
+    handlers: [console]
+    propagate: no 
+      
 root:
-  level: INFO  # DEBUG INFO ERROR
+  level: ERROR  # DEBUG INFO ERROR
   handlers: [console]

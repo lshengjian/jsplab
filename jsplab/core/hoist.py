@@ -16,7 +16,9 @@ class TransportCommand:
     tank1_offset:float=0
     tank2_offset:float=0
     urgency:int =0
-
+    job_index:int=0
+    def __str__(self):
+        return f"J{self.job_index+1} {self.tank1_offset}->{self.tank2_offset}"
         
 
     
