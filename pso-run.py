@@ -21,30 +21,16 @@ def extend_numpy_list(data:List[NDArray])->List[NDArray]:
     return rt
 
 def main():
-    cfg=ConfigMHP('mhp/demo.csv',3)
+    #cfg=ConfigMHP('mhp/t4j2.csv',2)
+    cfg=ConfigMHP('mhp/demo.csv',2)
     p=MultiHoistProblem(cfg)
-    opt1=PSO(30)
-    opt2=LSO(30)
+    #opt1=PSO(30)
+    opt=LSO(30)
 
-    best=1e10
-    cost=best
-    best_x=None
-    best_opt=None
-    for opt in [opt1,opt2]:
-        temp=[]
-        for _ in range(3):
-            try:
-                opt.reset(p)
-                cost,x=opt.run(2)
-            except:
-                pass
-            if best>cost:
-                best=cost
-                print(best)
-                best_x=x
-                best_opt=opt
-            #temp.append(opt.records)
-        #np.savetxt(f'results/{opt.name}.txt',extend_numpy_list(temp),fmt='%.0f',delimiter=',')
+    opt.reset(p)
+    cost,x=opt.run(1)
+    print(cost)
+
 
     #p.show(best_x)
 

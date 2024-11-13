@@ -30,6 +30,7 @@ class BaseSIA:
         return self.best_cost,self.best_x
         
     def reset(self,problem:IProblem):
+        #problem.reset()
         self.problem:IProblem=problem
         num_weights=reduce(operator.mul, problem.shape, 1) 
         self.xs:NDArray=np.random.randn(self.num_individuals,num_weights)

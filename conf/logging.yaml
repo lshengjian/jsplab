@@ -21,7 +21,7 @@ handlers:
     backupCount: 3
 loggers:
   mhp:
-    level: DEBUG  
+    level: INFO  
     handlers: [console]
     propagate: no 
 root:

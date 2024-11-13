@@ -38,6 +38,7 @@ class MultiHoistProblem(IProblem):
         return rt
     
     def cost(self,X:NDArray)->float:
+        self.reset()
         xs=X.reshape(self.shape)
         self.cmds=self.get_solution_info(xs)
         rt=None
@@ -49,6 +50,8 @@ class MultiHoistProblem(IProblem):
                 rt=99999
                 break
             rt=t
+        if not self.is_over:
+            logger.info(f'all jobs finished! time:{self.timer}')
         return rt
     def get_move_task_hoists(self):
         hs={}
@@ -57,7 +60,12 @@ class MultiHoistProblem(IProblem):
                 idx=job_idx*100+i-1
                 t1:Task=job.tasks[i-1]
                 t2:Task=job.tasks[i]
-                mi_hs=set(t1.can_move_hoists)&set(t2.can_move_hoists)
+                hs1=set(t1.can_move_hoists)
+                hs2=set(t2.can_move_hoists)
+                # print(f'{t1} HS:{hs1}')
+                # print(f'{t2} HS:{hs2}')
+                mi_hs=hs1&hs2
+                #print(f'Move {idx} HS:{mi_hs}')
                 hs[idx]=list(mi_hs)
         return hs
 
@@ -157,8 +165,8 @@ class MultiHoistProblem(IProblem):
                 tank.put_job(job)
             else:
                 self.jobs.remove(job)
-                if len(self.jobs)==0:
-                    logger.info(f'all jobs finished! time:{self.timer}')
+                #if len(self.jobs)==0:
+
                     #self.is_over=True
 
 
